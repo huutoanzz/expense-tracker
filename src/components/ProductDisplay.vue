@@ -2,6 +2,8 @@
     import { computed, ref } from 'vue'
     import logoVue from '../assets/vue.svg'
     import logoVite from '../assets/vite.svg'
+    import ReviewForm from './ReviewForm.vue'
+import ReviewList from './ReviewList.vue'
 
     const props = defineProps({
         premium:{
@@ -12,6 +14,7 @@
     const emit = defineEmits(['add-to-cart'])
     const product = ref("Logo Picture")
     const brand = ref("Draco")
+    const reviews = ref([])
     const title = computed(() => {
       return brand.value + " " + product.value
     })
@@ -45,6 +48,10 @@
     const updateVariant = (index) => {
       selectedVariant.value = index
     }
+
+    const addReview = (review) => {
+      reviews.value.push(review)
+    }
   </script>
 
   <template>
@@ -56,7 +63,7 @@
           <img
             :src="image"
             alt="Logo"
-            class="w-40 h-40 object-contain"
+            class="w-60 h-60 object-contain"
           />
 
           <!-- COLOR VARIANTS (HORIZONTAL) -->
@@ -132,9 +139,12 @@
           >
             ➕ Add to Cart
           </button>
-
         </div>
       </div>
+    </div>
+    <div class="w-full bg-blue-200 p-6" >
+      <ReviewList v-if="reviews.length > 0" :reviews="reviews"></ReviewList>
+      <ReviewForm @review-submitted="addReview"></ReviewForm>
     </div>
   </template>
 

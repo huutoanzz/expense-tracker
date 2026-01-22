@@ -1,5 +1,5 @@
-  <script setup lang="ts">
-    import { computed, ref } from 'vue'
+  <script setup>
+    import {ref } from 'vue'
 
     import logoVue from '../assets/vue.svg'
     import logoVite from '../assets/vite.svg'
