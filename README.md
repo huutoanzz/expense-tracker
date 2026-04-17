@@ -1,7 +1,5 @@
 # 🌟 Smart Expense Tracker - Quản Lý Tài Chính Thông Minh
 
-![Banner](file:///C:/Users/huutoan.phan/.gemini/antigravity/brain/686f00a4-36f9-43e4-92f5-2a9a3b417a8e/expense_tracker_preview_1776409900732.png)
-
 ## 📖 Giới thiệu
 **Smart Expense Tracker** là một ứng dụng quản lý tài chính cá nhân hiện đại, giúp bạn theo dõi thu nhập và chi tiêu một cách trực quan và hiệu quả. Với giao diện **Dark Mode** sang trọng, hiệu ứng chuyển động mượt mà và các biểu đồ phân tích chuyên sâu, ứng dụng mang đến trải nghiệm người dùng cao cấp.
 
