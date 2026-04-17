@@ -62,5 +62,5 @@ src/
 └── main.js          # Điểm khởi đầu của dự án (khởi tạo Vue, Store, UI Lib)
 ```
 
----
-Thiết kế và phát triển bởi **Antigravity AI**. Chúc bạn quản lý tài chính hiệu quả! 🚀
+
+
