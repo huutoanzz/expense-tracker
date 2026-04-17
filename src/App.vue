@@ -26,11 +26,14 @@
       </nav>
 
       <div class="sidebar-footer">
-        <button class="collapse-btn" @click="sidebarCollapsed = !sidebarCollapsed">
+        <el-button class="footer-icon-btn" @click="sidebarCollapsed = !sidebarCollapsed">
           <el-icon :size="18">
             <component :is="sidebarCollapsed ? 'ArrowRight' : 'ArrowLeft'" />
           </el-icon>
-        </button>
+        </el-button>
+        <el-button class="footer-icon-btn" @click="settingsVisible = true">
+          <el-icon :size="18"><Setting /></el-icon>
+        </el-button>
       </div>
     </aside>
 
@@ -57,6 +60,11 @@
       <section v-if="activeTab === 'dashboard'" class="tab-section animate__animated animate__fadeIn">
         <ExpenseSummary />
         <ExpenseChart />
+      </section>
+
+      <!-- ── Profile Tab ────────────────────────────── -->
+      <section v-if="activeTab === 'profile'" class="tab-section animate__animated animate__fadeIn">
+        <UserProfile />
       </section>
 
       <!-- ── Transactions Tab ───────────────────────── -->
@@ -205,6 +213,44 @@
         </div>
       </section>
     </main>
+
+    <!-- ── Settings Dialog ───────────────────────────── -->
+    <el-dialog
+      v-model="settingsVisible"
+      title="Cài Đặt Hệ Thống"
+      width="400px"
+      center
+      destroy-on-close
+      class="settings-dialog"
+    >
+      <div class="settings-content">
+        <div class="settings-section">
+          <h3 class="section-title">Quản Lý Dữ Liệu</h3>
+          <p class="section-desc">Các thao tác này sẽ ảnh hưởng trực tiếp đến dữ liệu của bạn.</p>
+          
+          <div class="settings-actions">
+            <el-button
+              type="danger"
+              plain
+              class="w-full mb-3"
+              @click="handleClearData"
+            >
+              <el-icon class="mr-1"><Delete /></el-icon>
+              Xóa Tất Cả Giao Dịch
+            </el-button>
+            
+            <el-button
+              type="danger"
+              class="w-full"
+              @click="handleResetDefault"
+            >
+              <el-icon class="mr-1"><RefreshLeft /></el-icon>
+              Đặt Lại Mặc Định
+            </el-button>
+          </div>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -216,10 +262,12 @@ import { useExpenseStore, CATEGORIES } from './stores/expenseStore'
 import ExpenseSummary from './components/ExpenseSummary.vue'
 import ExpenseChart from './components/ExpenseChart.vue'
 import ExpenseForm from './components/ExpenseForm.vue'
+import UserProfile from './components/UserProfile.vue'
 
 const store = useExpenseStore()
 const tableLoading = ref(false)
 const selectedRows = ref([])
+const settingsVisible = ref(false)
 
 function handleSelectionChange(val) {
   selectedRows.value = val
@@ -241,11 +289,17 @@ const navItems = computed(() => [
     icon: 'List',
     badge: store.transactions.length,
   },
+  {
+    key: 'profile',
+    label: 'Cá Nhân',
+    icon: 'User',
+  },
 ])
 
 const pageMap = {
   dashboard: { title: 'Dashboard', subtitle: 'Tổng quan tài chính của bạn' },
   transactions: { title: 'Giao Dịch', subtitle: 'Quản lý thu chi chi tiết' },
+  profile: { title: 'Thông Tin Cá Nhân', subtitle: 'Quản lý tài khoản của bạn' },
 }
 const currentPage = computed(() => pageMap[activeTab.value])
 
@@ -339,6 +393,49 @@ async function confirmDeleteMultiple() {
     ElMessage({ type: 'success', message: `Đã xóa ${ids.length} giao dịch thành công!`, duration: 2000 })
   } catch {
     tableLoading.value = false
+  }
+}
+
+// ── Settings Actions ──────────────────────────────────────
+async function handleClearData() {
+  try {
+    await ElMessageBox.confirm(
+      'Bạn có chắc muốn <b>xóa sạch tất cả giao dịch</b>? Thao tác này không thể hoàn tác.',
+      'Cảnh Báo',
+      {
+        confirmButtonText: 'Xác Nhận Xóa',
+        cancelButtonText: 'Hủy',
+        type: 'warning',
+        dangerouslyUseHTMLString: true,
+        confirmButtonClass: 'el-button--danger',
+      }
+    )
+    
+    store.clearAllData()
+    settingsVisible.value = false
+    ElMessage({ type: 'success', message: 'Đã xóa toàn bộ dữ liệu giao dịch!' })
+  } catch {
+    // cancelled
+  }
+}
+
+async function handleResetDefault() {
+  try {
+    await ElMessageBox.confirm(
+      'Hệ thống sẽ <b>xóa toàn bộ dữ liệu</b> (bao gồm cả Profile) và quay về trạng thái ban đầu. Bạn có chắc chắn?',
+      'Xác Nhận Reset',
+      {
+        confirmButtonText: 'Reset Ngay',
+        cancelButtonText: 'Hủy',
+        type: 'error',
+        dangerouslyUseHTMLString: true,
+        confirmButtonClass: 'el-button--danger',
+      }
+    )
+    
+    store.resetToDefault()
+  } catch {
+    // cancelled
   }
 }
 </script>
@@ -444,24 +541,87 @@ async function confirmDeleteMultiple() {
   border-top: 1px solid var(--card-border);
   display: flex;
   justify-content: center;
+  gap: 8px;
 }
-.collapse-btn {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
+.sidebar.collapsed .sidebar-footer {
+  flex-direction: column;
+  align-items: center;
+}
+
+.footer-icon-btn {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--card-border) !important;
   border-radius: 10px;
-  width: 36px;
-  height: 36px;
+  width: 36px !important;
+  height: 36px !important;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   color: var(--text-secondary);
   transition: all 0.2s ease;
+  padding: 0 !important;
+  margin: 0 !important;
 }
-.collapse-btn:hover {
-  background: rgba(99,102,241,0.1);
-  color: #6366f1;
-  border-color: #6366f1;
+.footer-icon-btn:hover {
+  background: rgba(99,102,241,0.1) !important;
+  color: #6366f1 !important;
+  border-color: #6366f1 !important;
+}
+
+/* ── Settings Dialog ─────────────────────────────────────── */
+.settings-content {
+  padding: 10px 0;
+}
+.settings-section {
+  text-align: center;
+}
+.section-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: var(--text-primary);
+}
+.section-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+.settings-actions {
+  display: flex;
+  flex-direction: column;
+}
+.w-full { width: 100%; }
+.mb-3 { margin-bottom: 12px; }
+
+:deep(.settings-dialog) {
+  border-radius: 18px;
+  background: var(--sidebar-bg) !important;
+}
+:deep(.settings-dialog .el-dialog__header) {
+  margin-right: 0;
+  border-bottom: 1px solid var(--card-border);
+  padding-bottom: 16px;
+}
+:deep(.settings-dialog .el-dialog__title) {
+  color: #ffffff !important;
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.5px;
+}
+:deep(.settings-dialog .el-dialog__body) {
+  padding: 30px 25px;
+}
+:deep(.settings-dialog .el-button) {
+  height: 44px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+:deep(.settings-dialog .el-icon) {
+  font-size: 18px;
 }
 
 /* ── Main Content ────────────────────────────────────────── */

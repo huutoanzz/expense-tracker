@@ -14,6 +14,7 @@ export const CATEGORIES = [
 ]
 
 const STORAGE_KEY = 'smart_expense_tracker_data'
+const PROFILE_KEY = 'smart_expense_tracker_profile'
 
 function loadFromStorage() {
   try {
@@ -24,8 +25,33 @@ function loadFromStorage() {
   }
 }
 
+function loadProfileFromStorage() {
+  try {
+    const raw = localStorage.getItem(PROFILE_KEY)
+    const defaults = { name: '', email: '', company: '', location: '', website: '', socialLinks: [] }
+    if (!raw) return defaults
+    const parsed = JSON.parse(raw)
+    // Migrate old flat social fields into socialLinks array
+    if (!parsed.socialLinks) {
+      const links = []
+      if (parsed.github) links.push({ url: parsed.github })
+      if (parsed.facebook) links.push({ url: parsed.facebook })
+      if (parsed.spotify) links.push({ url: parsed.spotify })
+      if (parsed.website && parsed.website !== parsed.website) links.push({ url: parsed.website })
+      parsed.socialLinks = links
+    }
+    return { ...defaults, ...parsed }
+  } catch {
+    return { name: '', email: '', company: '', location: '', website: '', socialLinks: [] }
+  }
+}
+
 function saveToStorage(transactions) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions))
+}
+
+function saveProfileToStorage(profile) {
+  localStorage.setItem(PROFILE_KEY, JSON.stringify(profile))
 }
 
 const SEED_DATA = [
@@ -47,6 +73,9 @@ export const useExpenseStore = defineStore('expense', () => {
   
   // Initialize: if first time, use seeds. Otherwise, use what's in storage.
   const transactions = ref(stored ?? (isFirstVisit ? SEED_DATA : []))
+  
+  // User Profile state
+  const userProfile = ref(loadProfileFromStorage())
   
   // Set flag if it's the first visit
   if (isFirstVisit) {
@@ -106,6 +135,21 @@ export const useExpenseStore = defineStore('expense', () => {
     saveToStorage(transactions.value)
   }
 
+  function updateProfile(payload) {
+    userProfile.value = { ...userProfile.value, ...payload }
+    saveProfileToStorage(userProfile.value)
+  }
+
+  function clearAllData() {
+    transactions.value = []
+    saveToStorage(transactions.value)
+  }
+
+  function resetToDefault() {
+    localStorage.clear()
+    window.location.reload()
+  }
+
   // ── Helpers ───────────────────────────────────────────────
   function getCategoryInfo(value) {
     return CATEGORIES.find(c => c.value === value) ?? CATEGORIES[CATEGORIES.length - 1]
@@ -113,6 +157,7 @@ export const useExpenseStore = defineStore('expense', () => {
 
   return {
     transactions,
+    userProfile,
     totalIncome,
     totalExpense,
     balance,
@@ -120,6 +165,9 @@ export const useExpenseStore = defineStore('expense', () => {
     addTransaction,
     deleteTransaction,
     deleteMultipleTransactions,
+    updateProfile,
+    clearAllData,
+    resetToDefault,
     getCategoryInfo,
   }
 })
