@@ -10,62 +10,62 @@
 }
 
 body.theme-black {
-  --bg-main: #0f172a;
-  --sidebar-bg: #1e293b;
-  --card-bg: #1e293b;
-  --card-border: rgba(255, 255, 255, 0.15);
+  --bg-main: rgba(15, 23, 42, 0.75);
+  --sidebar-bg: rgba(30, 41, 59, 0.8);
+  --card-bg: rgba(30, 41, 59, 0.7);
+  --card-border: rgba(255, 255, 255, 0.1);
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --el-dialog-bg-color: #1e293b;
   --el-messagebox-bg-color: #1e293b;
   --el-notification-bg-color: #334155;
   --el-select-dropdown-bg-color: #334155;
-  --el-input-bg-color: #0f172a;
+  --el-input-bg-color: rgba(15, 23, 42, 0.6);
   --el-input-text-color: #f8fafc;
   --el-bg-color: #1e293b;
   --el-text-color-primary: #f8fafc;
   --el-text-color-regular: #94a3b8;
-  background-color: var(--bg-main);
+  background-color: transparent;
   color: var(--text-primary);
 }
 
 body.theme-blue {
-  --bg-main: #f0f7ff;
-  --sidebar-bg: #e0f2fe;
-  --card-bg: #ffffff;
-  --card-border: rgba(14, 165, 233, 0.15);
-  --text-primary: #0c4a6e;
-  --text-secondary: #0ea5e9;
-  --el-dialog-bg-color: #ffffff;
-  --el-messagebox-bg-color: #ffffff;
-  --el-notification-bg-color: #ffffff;
-  --el-select-dropdown-bg-color: #ffffff;
-  --el-input-bg-color: #f8fafc;
-  --el-input-text-color: #0f172a;
-  --el-bg-color: #ffffff;
-  --el-text-color-primary: #0c4a6e;
-  --el-text-color-regular: #0ea5e9;
-  background-color: var(--bg-main);
+  --bg-main: rgba(13, 43, 78, 0.75);
+  --sidebar-bg: rgba(15, 52, 96, 0.82);
+  --card-bg: rgba(18, 58, 110, 0.7);
+  --card-border: rgba(100, 180, 255, 0.1);
+  --text-primary: #e8f4fd;
+  --text-secondary: #64b4d8;
+  --el-dialog-bg-color: #123a6e;
+  --el-messagebox-bg-color: #123a6e;
+  --el-notification-bg-color: #123a6e;
+  --el-select-dropdown-bg-color: #123a6e;
+  --el-input-bg-color: rgba(13, 43, 78, 0.6);
+  --el-input-text-color: #e8f4fd;
+  --el-bg-color: #123a6e;
+  --el-text-color-primary: #e8f4fd;
+  --el-text-color-regular: #64b4d8;
+  background-color: transparent;
   color: var(--text-primary);
 }
 
 body.theme-white {
-  --bg-main: #f8fafc;
-  --sidebar-bg: #ffffff;
-  --card-bg: #ffffff;
-  --card-border: rgba(0, 0, 0, 0.08);
+  --bg-main: rgba(248, 250, 252, 0.8);
+  --sidebar-bg: rgba(255, 255, 255, 0.85);
+  --card-bg: rgba(255, 255, 255, 0.7);
+  --card-border: rgba(0, 0, 0, 0.05);
   --text-primary: #0f172a;
   --text-secondary: #64748b;
   --el-dialog-bg-color: #ffffff;
   --el-messagebox-bg-color: #ffffff;
   --el-notification-bg-color: #ffffff;
   --el-select-dropdown-bg-color: #ffffff;
-  --el-input-bg-color: #f1f5f9;
+  --el-input-bg-color: rgba(241, 245, 249, 0.7);
   --el-input-text-color: #0f172a;
   --el-bg-color: #ffffff;
   --el-text-color-primary: #0f172a;
   --el-text-color-regular: #64748b;
-  background-color: var(--bg-main);
+  background-color: transparent;
   color: var(--text-primary);
 }
 
@@ -87,10 +87,15 @@ body,
 
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: var(--bg-main);
+  background: transparent;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.sidebar, .topbar, .table-card, .el-dialog, .el-message-box, .el-notification {
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
 }
 
 /* ── Element Plus Dark Theme Overrides ──────────────────── */

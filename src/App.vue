@@ -1,4 +1,5 @@
 <template>
+  <VantaBackground />
   <div class="app-layout">
     <!-- ── Sidebar ───────────────────────────────────── -->
     <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
@@ -235,7 +236,7 @@
             <div
               v-for="t in [
                 { key: 'white', label: 'Sáng', icon: 'Sunny' },
-                { key: 'blue', label: 'Xanh trời', icon: 'Cloudy' },
+                { key: 'blue', label: 'Xanh', icon: 'Cloudy' },
                 { key: 'black', label: 'Tối', icon: 'Moon' }
               ]"
               :key="t.key"
@@ -290,6 +291,7 @@ import ExpenseSummary from './components/ExpenseSummary.vue'
 import ExpenseChart from './components/ExpenseChart.vue'
 import ExpenseForm from './components/ExpenseForm.vue'
 import UserProfile from './components/UserProfile.vue'
+import VantaBackground from './components/VantaBackground.vue'
 
 const store = useExpenseStore()
 const tableLoading = ref(false)
