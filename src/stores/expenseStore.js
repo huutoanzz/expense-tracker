@@ -15,6 +15,7 @@ export const CATEGORIES = [
 
 const STORAGE_KEY = 'smart_expense_tracker_data'
 const PROFILE_KEY = 'smart_expense_tracker_profile'
+const THEME_KEY = 'smart_expense_tracker_theme'
 
 function loadFromStorage() {
   try {
@@ -44,6 +45,10 @@ function loadProfileFromStorage() {
   } catch {
     return { name: '', email: '', company: '', location: '', website: '', socialLinks: [] }
   }
+}
+
+function loadThemeFromStorage() {
+  return localStorage.getItem(THEME_KEY) || 'black'
 }
 
 function saveToStorage(transactions) {
@@ -76,6 +81,9 @@ export const useExpenseStore = defineStore('expense', () => {
   
   // User Profile state
   const userProfile = ref(loadProfileFromStorage())
+  
+  // Theme state
+  const theme = ref(loadThemeFromStorage())
   
   // Set flag if it's the first visit
   if (isFirstVisit) {
@@ -140,6 +148,11 @@ export const useExpenseStore = defineStore('expense', () => {
     saveProfileToStorage(userProfile.value)
   }
 
+  function setTheme(t) {
+    theme.value = t
+    localStorage.setItem(THEME_KEY, t)
+  }
+
   function clearAllData() {
     transactions.value = []
     saveToStorage(transactions.value)
@@ -158,6 +171,7 @@ export const useExpenseStore = defineStore('expense', () => {
   return {
     transactions,
     userProfile,
+    theme,
     totalIncome,
     totalExpense,
     balance,
@@ -166,6 +180,7 @@ export const useExpenseStore = defineStore('expense', () => {
     deleteTransaction,
     deleteMultipleTransactions,
     updateProfile,
+    setTheme,
     clearAllData,
     resetToDefault,
     getCategoryInfo,

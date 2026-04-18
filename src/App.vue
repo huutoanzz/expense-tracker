@@ -26,14 +26,16 @@
       </nav>
 
       <div class="sidebar-footer">
-        <el-button class="footer-icon-btn" @click="sidebarCollapsed = !sidebarCollapsed">
-          <el-icon :size="18">
-            <component :is="sidebarCollapsed ? 'ArrowRight' : 'ArrowLeft'" />
-          </el-icon>
-        </el-button>
-        <el-button class="footer-icon-btn" @click="settingsVisible = true">
-          <el-icon :size="18"><Setting /></el-icon>
-        </el-button>
+        <div class="footer-actions">
+          <el-button class="footer-icon-btn" @click="sidebarCollapsed = !sidebarCollapsed">
+            <el-icon :size="18">
+              <component :is="sidebarCollapsed ? 'ArrowRight' : 'ArrowLeft'" />
+            </el-icon>
+          </el-button>
+          <el-button class="footer-icon-btn" @click="settingsVisible = true">
+            <el-icon :size="18"><Setting /></el-icon>
+          </el-button>
+        </div>
       </div>
     </aside>
 
@@ -116,7 +118,7 @@
             <el-table
               v-loading="tableLoading"
               element-loading-text="Đang xử lý..."
-              element-loading-background="rgba(20, 24, 36, 0.8)"
+              element-loading-background="rgba(0, 0, 0, 0.5)"
               :data="filteredTransactions"
               style="width: 100%"
               empty-text="Không có giao dịch nào"
@@ -218,12 +220,37 @@
     <el-dialog
       v-model="settingsVisible"
       title="Cài Đặt Hệ Thống"
-      width="400px"
+      width="440px"
       center
       destroy-on-close
       class="settings-dialog"
     >
       <div class="settings-content">
+        <!-- Interface Section -->
+        <div class="settings-section mb-6">
+          <h3 class="section-title">Giao Diện</h3>
+          <p class="section-desc">Chọn phong cách màu sắc phù hợp với bạn.</p>
+          
+          <div class="theme-options">
+            <div
+              v-for="t in [
+                { key: 'white', label: 'Sáng', icon: 'Sunny' },
+                { key: 'blue', label: 'Xanh trời', icon: 'Cloudy' },
+                { key: 'black', label: 'Tối', icon: 'Moon' }
+              ]"
+              :key="t.key"
+              class="theme-option"
+              :class="[t.key, { active: store.theme === t.key }]"
+              @click="store.setTheme(t.key)"
+            >
+              <div class="theme-preview">
+                <el-icon><component :is="t.icon" /></el-icon>
+              </div>
+              <span class="theme-label">{{ t.label }}</span>
+            </div>
+          </div>
+        </div>
+
         <div class="settings-section">
           <h3 class="section-title">Quản Lý Dữ Liệu</h3>
           <p class="section-desc">Các thao tác này sẽ ảnh hưởng trực tiếp đến dữ liệu của bạn.</p>
@@ -232,19 +259,19 @@
             <el-button
               type="danger"
               plain
-              class="w-full mb-3"
+              class="action-btn mb-3"
               @click="handleClearData"
             >
-              <el-icon class="mr-1"><Delete /></el-icon>
+              <el-icon><Delete /></el-icon>
               Xóa Tất Cả Giao Dịch
             </el-button>
             
             <el-button
               type="danger"
-              class="w-full"
+              class="action-btn"
               @click="handleResetDefault"
             >
-              <el-icon class="mr-1"><RefreshLeft /></el-icon>
+              <el-icon><RefreshLeft /></el-icon>
               Đặt Lại Mặc Định
             </el-button>
           </div>
@@ -255,7 +282,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { vAutoAnimate } from '@formkit/auto-animate/vue'
 import { useExpenseStore, CATEGORIES } from './stores/expenseStore'
@@ -268,6 +295,15 @@ const store = useExpenseStore()
 const tableLoading = ref(false)
 const selectedRows = ref([])
 const settingsVisible = ref(false)
+
+// ── Theme Management ──────────────────────────────────────
+watch(() => store.theme, (newTheme) => {
+  document.body.className = `theme-${newTheme}`
+}, { immediate: true })
+
+onMounted(() => {
+  document.body.className = `theme-${store.theme}`
+})
 
 function handleSelectionChange(val) {
   selectedRows.value = val
@@ -544,6 +580,16 @@ async function handleResetDefault() {
   gap: 8px;
 }
 .sidebar.collapsed .sidebar-footer {
+  padding: 16px 0;
+}
+
+.footer-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+.sidebar.collapsed .footer-actions {
   flex-direction: column;
   align-items: center;
 }
@@ -604,7 +650,7 @@ async function handleResetDefault() {
   padding-bottom: 16px;
 }
 :deep(.settings-dialog .el-dialog__title) {
-  color: #ffffff !important;
+  color: var(--text-primary) !important;
   font-weight: 700;
   font-size: 18px;
   letter-spacing: 0.5px;
@@ -619,6 +665,8 @@ async function handleResetDefault() {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  margin-left: 0 !important;
+  width: 100%;
 }
 :deep(.settings-dialog .el-icon) {
   font-size: 18px;

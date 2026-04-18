@@ -2,17 +2,68 @@
 
 /* ── Design Tokens ──────────────────────────────────────── */
 :root {
+  --accent: #6366f1;
+  --accent-2: #3b82f6;
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+}
+
+body.theme-black {
   --bg-main: #0f1117;
   --sidebar-bg: #141824;
   --card-bg: #1a2030;
   --card-border: rgba(255, 255, 255, 0.07);
   --text-primary: #f1f5f9;
   --text-secondary: #94a3b8;
-  --accent: #6366f1;
-  --accent-2: #3b82f6;
-  --success: #10b981;
-  --danger: #ef4444;
-  --warning: #f59e0b;
+  --el-dialog-bg-color: #1a2030;
+  --el-messagebox-bg-color: #1a2030;
+  --el-notification-bg-color: #1e2535;
+  --el-select-dropdown-bg-color: #1e2535;
+  --el-input-bg-color: rgba(255, 255, 255, 0.04);
+  --el-bg-color: #1a2030;
+  --el-text-color-primary: #f1f5f9;
+  --el-text-color-regular: #94a3b8;
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+}
+
+body.theme-blue {
+  --bg-main: #f0f7ff;
+  --sidebar-bg: #e0f2fe;
+  --card-bg: #ffffff;
+  --card-border: rgba(14, 165, 233, 0.15);
+  --text-primary: #0c4a6e;
+  --text-secondary: #0ea5e9;
+  --el-dialog-bg-color: #ffffff;
+  --el-messagebox-bg-color: #ffffff;
+  --el-notification-bg-color: #ffffff;
+  --el-select-dropdown-bg-color: #ffffff;
+  --el-input-bg-color: #f8fafc;
+  --el-bg-color: #ffffff;
+  --el-text-color-primary: #0c4a6e;
+  --el-text-color-regular: #0ea5e9;
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+}
+
+body.theme-white {
+  --bg-main: #f0f2f5;
+  --sidebar-bg: #ffffff;
+  --card-bg: #ffffff;
+  --card-border: rgba(0, 0, 0, 0.06);
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --el-dialog-bg-color: #ffffff;
+  --el-messagebox-bg-color: #ffffff;
+  --el-notification-bg-color: #ffffff;
+  --el-select-dropdown-bg-color: #ffffff;
+  --el-input-bg-color: #f8fafc;
+  --el-bg-color: #ffffff;
+  --el-text-color-primary: #1e293b;
+  --el-text-color-regular: #64748b;
+  background-color: var(--bg-main);
+  color: var(--text-primary);
 }
 
 /* ── Reset ───────────────────────────────────────────────── */
@@ -70,10 +121,10 @@ body {
 }
 
 .el-dialog {
-  --el-dialog-bg-color: #1a2030 !important;
+  --el-dialog-bg-color: var(--el-dialog-bg-color) !important;
   --el-dialog-border-radius: 18px !important;
   border: 1px solid var(--card-border) !important;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6) !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4) !important;
 }
 
 .el-dialog__header {
@@ -92,7 +143,7 @@ body {
 .el-select__wrapper,
 .el-input-number,
 .el-date-editor.el-input__wrapper {
-  background: rgba(255, 255, 255, 0.04) !important;
+  background: var(--el-input-bg-color) !important;
   border: 1px solid var(--card-border) !important;
   border-radius: 10px !important;
   box-shadow: none !important;
@@ -130,7 +181,7 @@ body {
 }
 
 .el-select-dropdown {
-  background: #1e2535 !important;
+  background: var(--el-select-dropdown-bg-color) !important;
   border: 1px solid var(--card-border) !important;
   border-radius: 12px !important;
 }
@@ -153,7 +204,7 @@ body {
 }
 
 .el-radio-group .el-radio-button__inner {
-  background: rgba(255, 255, 255, 0.04) !important;
+  background: var(--el-input-bg-color) !important;
   border-color: var(--card-border) !important;
   color: var(--text-secondary) !important;
   font-weight: 500 !important;
@@ -195,10 +246,12 @@ body {
 }
 
 .el-message-box {
+  --el-messagebox-title-color: var(--text-primary) !important;
   --el-messagebox-content-color: var(--text-secondary) !important;
-  background: #1a2030 !important;
+  background: var(--el-messagebox-bg-color) !important;
   border: 1px solid var(--card-border) !important;
   border-radius: 16px !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2) !important;
 }
 
 .el-message-box__title {
@@ -211,10 +264,10 @@ body {
 }
 
 .el-notification {
-  background: #1e2535 !important;
+  background: var(--el-notification-bg-color) !important;
   border: 1px solid var(--card-border) !important;
   border-radius: 14px !important;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15) !important;
 }
 
 .el-notification__title {
@@ -229,11 +282,11 @@ body {
 /* Date picker dark style */
 .el-date-picker,
 .el-picker__popper {
-  --el-bg-color: #1e2535 !important;
+  --el-bg-color: var(--el-select-dropdown-bg-color) !important;
   --el-text-color-primary: var(--text-primary) !important;
   --el-border-color: var(--card-border) !important;
   --el-text-color-placeholder: var(--text-secondary) !important;
-  background: #1e2535 !important;
+  background: var(--el-select-dropdown-bg-color) !important;
   border: 1px solid var(--card-border) !important;
   border-radius: 12px !important;
 }
@@ -273,7 +326,7 @@ body {
 
 /* ── Settings Dialog ─────────────────────────────────────── */
 .settings-dialog {
-  --el-dialog-bg-color: #1a2030;
+  --el-dialog-bg-color: var(--el-dialog-bg-color);
   --el-dialog-border-radius: 18px;
 }
 
@@ -294,13 +347,74 @@ body {
 }
 
 .section-desc {
-  font-size: 14.5px;
-  line-height: 1.65;
+  font-size: 13.5px;
+  line-height: 1.5;
   color: var(--text-secondary);
   text-align: center;
-  margin-bottom: 28px;
+  margin-bottom: 20px;
   padding: 0 12px;
 }
+
+/* ── Theme Selection UI ──────────────────────────────────── */
+.theme-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 30px;
+}
+
+.theme-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 8px;
+  border-radius: 14px;
+  border: 2px solid transparent;
+  background: var(--bg-main);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-option:hover {
+  transform: translateY(-2px);
+  border-color: var(--card-border);
+}
+
+.theme-option.active {
+  border-color: var(--accent);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.theme-preview {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.theme-option.active .theme-preview {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
+}
+
+.theme-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.theme-option.white .theme-preview { background: #ffffff; color: #f59e0b; border: 1px solid #e2e8f0; }
+.theme-option.blue .theme-preview { background: #3b82f6; color: #ffffff; }
+.theme-option.black .theme-preview { background: #0f1117; color: #a5b4fc; }
+
+.mb-0 { margin-bottom: 0 !important; }
 
 .settings-actions {
   display: flex;
@@ -336,7 +450,7 @@ body {
 :deep(.settings-dialog .el-dialog__title) {
   font-size: 19px !important;
   font-weight: 700 !important;
-  color: #fff !important;
+  color: var(--text-primary) !important;
 }
 
 :deep(.settings-dialog .el-dialog__body) {

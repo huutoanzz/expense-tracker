@@ -164,20 +164,26 @@ const formRef = ref(null)
 const saving = ref(false)
 
 // ── Social service map ──────────────────────────────────────
-// Uses skillicons.dev for high-quality SVG icons
+// Uses cdn.simpleicons.org — supports all brand/social icons
 const SOCIAL_MAP = [
-  { hosts: ['github.com'],                       label: 'GitHub',    icon: 'github' },
-  { hosts: ['facebook.com', 'm.facebook.com'],   label: 'Facebook',  icon: 'facebook' },
-  { hosts: ['twitter.com', 'x.com'],             label: 'X / Twitter', icon: 'twitter' },
-  { hosts: ['linkedin.com', 'www.linkedin.com'], label: 'LinkedIn',  icon: 'linkedin' },
-  { hosts: ['instagram.com'],                    label: 'Instagram', icon: 'instagram' },
-  { hosts: ['open.spotify.com', 'spotify.com'],  label: 'Spotify',   icon: 'spotify' },
-  { hosts: ['youtube.com', 'youtu.be'],          label: 'YouTube',   icon: 'youtube' },
-  { hosts: ['tiktok.com'],                       label: 'TikTok',    icon: 'tiktok' },
-  { hosts: ['twitch.tv'],                        label: 'Twitch',    icon: 'twitch' },
-  { hosts: ['discord.gg', 'discord.com'],        label: 'Discord',   icon: 'discord' },
-  { hosts: ['reddit.com'],                       label: 'Reddit',    icon: 'reddit' },
-  { hosts: ['telegram.org', 't.me'],             label: 'Telegram',  icon: 'telegram' },
+  { hosts: ['github.com'],                       label: 'GitHub',    icon: 'github',    color: 'ffffff' },
+  { hosts: ['facebook.com', 'm.facebook.com'],   label: 'Facebook',  icon: 'facebook',  color: '1877F2' },
+  { hosts: ['twitter.com', 'x.com'],             label: 'X / Twitter', icon: 'x',       color: 'ffffff' },
+  { hosts: ['linkedin.com', 'www.linkedin.com'], label: 'LinkedIn',  icon: 'linkedin',  color: '0A66C2' },
+  { hosts: ['instagram.com'],                    label: 'Instagram', icon: 'instagram', color: 'E4405F' },
+  { hosts: ['open.spotify.com', 'spotify.com'],  label: 'Spotify',   icon: 'spotify',   color: '1DB954' },
+  { hosts: ['youtube.com', 'youtu.be'],          label: 'YouTube',   icon: 'youtube',   color: 'FF0000' },
+  { hosts: ['tiktok.com'],                       label: 'TikTok',    icon: 'tiktok',    color: 'ffffff' },
+  { hosts: ['twitch.tv'],                        label: 'Twitch',    icon: 'twitch',    color: '9146FF' },
+  { hosts: ['discord.gg', 'discord.com'],        label: 'Discord',   icon: 'discord',   color: '5865F2' },
+  { hosts: ['reddit.com'],                       label: 'Reddit',    icon: 'reddit',    color: 'FF4500' },
+  { hosts: ['telegram.org', 't.me'],             label: 'Telegram',  icon: 'telegram',  color: '26A5E4' },
+  { hosts: ['pinterest.com'],                    label: 'Pinterest', icon: 'pinterest', color: 'E60023' },
+  { hosts: ['snapchat.com'],                     label: 'Snapchat',  icon: 'snapchat',  color: 'FFFC00' },
+  { hosts: ['threads.net'],                      label: 'Threads',   icon: 'threads',   color: 'ffffff' },
+  { hosts: ['behance.net'],                      label: 'Behance',   icon: 'behance',   color: '1769FF' },
+  { hosts: ['dribbble.com'],                     label: 'Dribbble',  icon: 'dribbble',  color: 'EA4C89' },
+  { hosts: ['medium.com'],                       label: 'Medium',    icon: 'medium',    color: 'ffffff' },
 ]
 
 function extractHostname(raw) {
@@ -199,10 +205,10 @@ function getSocialInfo(raw) {
   )
 
   if (match) {
-    // skillicons.dev returns crisp SVG icons — no API key needed
+    // cdn.simpleicons.org — brand SVG icons with brand color, supports all social platforms
     return {
       label: match.label,
-      favicon: `https://skillicons.dev/icons?i=${match.icon}`,
+      favicon: `https://cdn.simpleicons.org/${match.icon}/${match.color}`,
     }
   }
 
@@ -530,7 +536,11 @@ async function handleSave() {
   gap: 4px;
   margin-top: 4px;
 }
-.add-social-btn:hover { color: #818cf8; }
+.add-social-btn:hover {
+  color: #818cf8 !important;
+  background: rgba(99, 102, 241, 0.1) !important;
+  transform: translateY(-1px);
+}
 
 /* ── Actions ─────────────────────────────────────────────── */
 .form-actions {
