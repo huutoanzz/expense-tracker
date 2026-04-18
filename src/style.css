@@ -30,21 +30,21 @@ body.theme-black {
 }
 
 body.theme-blue {
-  --bg-main: #f0f7ff;
-  --sidebar-bg: #e0f2fe;
-  --card-bg: #ffffff;
-  --card-border: rgba(14, 165, 233, 0.15);
-  --text-primary: #0c4a6e;
-  --text-secondary: #0ea5e9;
-  --el-dialog-bg-color: #ffffff;
-  --el-messagebox-bg-color: #ffffff;
-  --el-notification-bg-color: #ffffff;
-  --el-select-dropdown-bg-color: #ffffff;
-  --el-input-bg-color: #f8fafc;
-  --el-input-text-color: #0f172a;
-  --el-bg-color: #ffffff;
-  --el-text-color-primary: #0c4a6e;
-  --el-text-color-regular: #0ea5e9;
+  --bg-main: #0d2b4e;
+  --sidebar-bg: #0f3460;
+  --card-bg: #123a6e;
+  --card-border: rgba(100, 180, 255, 0.15);
+  --text-primary: #e8f4fd;
+  --text-secondary: #64b4d8;
+  --el-dialog-bg-color: #123a6e;
+  --el-messagebox-bg-color: #123a6e;
+  --el-notification-bg-color: #123a6e;
+  --el-select-dropdown-bg-color: #123a6e;
+  --el-input-bg-color: #0d2b4e;
+  --el-input-text-color: #e8f4fd;
+  --el-bg-color: #123a6e;
+  --el-text-color-primary: #e8f4fd;
+  --el-text-color-regular: #64b4d8;
   background-color: var(--bg-main);
   color: var(--text-primary);
 }
