@@ -235,7 +235,7 @@
             <div
               v-for="t in [
                 { key: 'white', label: 'Sáng', icon: 'Sunny' },
-                { key: 'blue', label: 'Xanh trời', icon: 'Cloudy' },
+                { key: 'blue', label: 'Xanh', icon: 'Cloudy' },
                 { key: 'black', label: 'Tối', icon: 'Moon' }
               ]"
               :key="t.key"
