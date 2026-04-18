@@ -475,10 +475,6 @@ async function handleSave() {
   padding-bottom: 4px;
   line-height: 1.4;
 }
-:deep(.el-input__wrapper) {
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.03);
-}
 :deep(.el-input__inner) { font-size: 14px; }
 
 /* ── Social rows ─────────────────────────────────────────── */

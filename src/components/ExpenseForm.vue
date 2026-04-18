@@ -207,47 +207,48 @@ async function submit() {
 
 <style scoped>
 .add-btn {
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, #6366f1, #3b82f6);
   border: none;
-  padding: 12px 28px;
-  font-size: 15px;
-  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
-  transition: all 0.25s ease;
+  padding: 14px 32px;
+  font-size: 16px;
+  box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .add-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.5);
+  transform: translateY(-3px);
+  box-shadow: 0 15px 25px -5px rgba(99, 102, 241, 0.5);
+  filter: brightness(1.1);
 }
 
 .add-btn .mr-1 {
-  margin-right: 6px;
+  margin-right: 8px;
 }
 
-.type-group {
-  width: 100%;
-  display: flex;
+.expense-form {
+  padding-top: 8px;
 }
-.type-group :deep(.el-radio-button) {
-  flex: 1;
+
+.expense-form :deep(.el-form-item) {
+  margin-bottom: 24px;
 }
-.type-group :deep(.el-radio-button__inner) {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+
+.expense-form :deep(.el-form-item:last-child) {
+  margin-bottom: 0;
 }
 
 .cat-option {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  padding: 4px 0;
 }
+
 .cat-dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -255,19 +256,11 @@ async function submit() {
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
+  width: 100%;
 }
 
-:deep(.expense-dialog .el-dialog__header) {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  padding-bottom: 16px;
-}
-:deep(.expense-dialog .el-dialog__title) {
-  font-size: 18px;
-  font-weight: 700;
-}
-:deep(.expense-form .el-form-item__label) {
-  font-weight: 600;
-  font-size: 13px;
+.dialog-footer .el-button {
+  min-width: 110px;
 }
 </style>
