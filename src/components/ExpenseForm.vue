@@ -40,6 +40,19 @@
         </el-radio-group>
       </el-form-item>
 
+      <!-- Auto Allocation Toggle (Income Only) -->
+      <el-collapse-transition>
+        <div v-if="form.type === 'income' && store.allocationSettings.enabled" class="allocation-toggle-box mb-4">
+          <div class="toggle-content">
+            <div class="toggle-text">
+              <span class="toggle-title">Tự động phân bổ</span>
+              <span class="toggle-desc">Chia tiền vào các hũ theo cấu hình sẵn có.</span>
+            </div>
+            <el-switch v-model="form.autoAllocation" />
+          </div>
+        </div>
+      </el-collapse-transition>
+
       <!-- Description -->
       <el-form-item label="Mô Tả" prop="description">
         <el-input
@@ -140,6 +153,7 @@ const form = reactive({
   amount: null,
   category: '',
   date: today,
+  autoAllocation: true
 })
 
 const rules = {
@@ -190,9 +204,10 @@ async function submit() {
     type: form.type,
     category: form.category,
     date: form.date,
+    skipAutoAllocation: !form.autoAllocation
   })
 
-  ElNotification({
+   ElNotification({
     title: '✅ Thành Công',
     message: `Đã thêm "${form.description}"`,
     type: 'success',
@@ -231,6 +246,35 @@ async function submit() {
   padding-top: 8px;
 }
 
+.allocation-toggle-box {
+  background: rgba(99, 102, 241, 0.05);
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.toggle-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.toggle-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.toggle-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.toggle-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
 .expense-form :deep(.el-form-item) {
   margin-bottom: 24px;
 }
@@ -263,4 +307,6 @@ async function submit() {
 .dialog-footer .el-button {
   min-width: 110px;
 }
+
+.mb-4 { margin-bottom: 16px; }
 </style>

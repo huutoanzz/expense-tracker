@@ -64,6 +64,11 @@
         <ExpenseChart />
       </section>
 
+      <!-- ── Jars Tab ─────────────────────────────── -->
+      <section v-if="activeTab === 'jars'" class="tab-section animate__animated animate__fadeIn">
+        <JarDashboard />
+      </section>
+
       <!-- ── Profile Tab ────────────────────────────── -->
       <section v-if="activeTab === 'profile'" class="tab-section animate__animated animate__fadeIn">
         <UserProfile />
@@ -147,14 +152,39 @@
                 </template>
               </el-table-column>
 
-              <el-table-column label="Loại" width="110" align="center">
+              <el-table-column label="Loại" width="140" align="center">
                 <template #default="{ row }">
                   <el-tag
-                    :type="row.type === 'income' ? 'success' : 'danger'"
+                    v-if="row.type === 'income'"
+                    type="success"
                     size="small"
                     round
                   >
-                    {{ row.type === 'income' ? '↑ Thu nhập' : '↓ Chi tiêu' }}
+                    ↑ Thu nhập
+                  </el-tag>
+                  <el-tag
+                    v-else-if="row.type === 'expense'"
+                    type="danger"
+                    size="small"
+                    round
+                  >
+                    ↓ Chi tiêu
+                  </el-tag>
+                  <el-tag
+                    v-else-if="row.type === 'internal'"
+                    type="info"
+                    size="small"
+                    round
+                  >
+                    ⇅ Chuyển nội bộ
+                  </el-tag>
+                  <el-tag
+                    v-else-if="row.type === 'adjustment'"
+                    type="warning"
+                    size="small"
+                    round
+                  >
+                    ⚖ Điều chỉnh
                   </el-tag>
                 </template>
               </el-table-column>
@@ -163,9 +193,14 @@
                 <template #default="{ row }">
                   <span
                     class="tx-amount"
-                    :class="row.type === 'income' ? 'income-amount' : 'expense-amount'"
+                    :class="{
+                      'income-amount': row.type === 'income',
+                      'expense-amount': row.type === 'expense',
+                      'internal-amount': row.type === 'internal',
+                      'adjustment-amount': row.type === 'adjustment'
+                    }"
                   >
-                    {{ row.type === 'income' ? '+' : '-' }}{{ formatVND(row.amount) }}
+                    {{ (row.type === 'income' || (row.type === 'internal' && row.targetType === 'JAR')) ? '+' : '-' }}{{ formatVND(row.amount) }}
                   </span>
                 </template>
               </el-table-column>
@@ -290,6 +325,7 @@ import ExpenseSummary from './components/ExpenseSummary.vue'
 import ExpenseChart from './components/ExpenseChart.vue'
 import ExpenseForm from './components/ExpenseForm.vue'
 import UserProfile from './components/UserProfile.vue'
+import JarDashboard from './components/JarDashboard.vue'
 
 const store = useExpenseStore()
 const tableLoading = ref(false)
@@ -320,6 +356,11 @@ const navItems = computed(() => [
     icon: 'DataBoard',
   },
   {
+    key: 'jars',
+    label: 'Hũ Chi Tiêu',
+    icon: 'GoldMedal',
+  },
+  {
     key: 'transactions',
     label: 'Giao Dịch',
     icon: 'List',
@@ -334,6 +375,7 @@ const navItems = computed(() => [
 
 const pageMap = {
   dashboard: { title: 'Dashboard', subtitle: 'Tổng quan tài chính của bạn' },
+  jars: { title: 'Hũ Chi Tiêu', subtitle: 'Quản lý ngân sách thông minh' },
   transactions: { title: 'Giao Dịch', subtitle: 'Quản lý thu chi chi tiết' },
   profile: { title: 'Thông Tin Cá Nhân', subtitle: 'Quản lý tài khoản của bạn' },
 }
@@ -811,7 +853,9 @@ async function handleResetDefault() {
   letter-spacing: -0.3px;
 }
 .income-amount { color: #10b981; }
-.expense-amount { color: #f97316; }
+.expense-amount { color: #ef4444; }
+.internal-amount { color: #6366f1; }
+.adjustment-amount { color: #f59e0b; }
 
 .tx-date {
   font-size: 13px;
