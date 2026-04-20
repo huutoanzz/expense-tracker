@@ -439,7 +439,7 @@ async function confirmDelete(row) {
     )
     
     tableLoading.value = true
-    await store.deleteTransaction(row.id)
+    await store.deleteTransaction(row.id)        // ← đã hỗ trợ single
     tableLoading.value = false
     
     ElMessage({ type: 'success', message: 'Đã xóa giao dịch thành công!', duration: 2000 })
@@ -449,6 +449,8 @@ async function confirmDelete(row) {
 }
 
 async function confirmDeleteMultiple() {
+  if (selectedRows.value.length === 0) return
+
   try {
     await ElMessageBox.confirm(
       `Bạn có chắc muốn xóa <b>${selectedRows.value.length}</b> giao dịch đã chọn?`,
@@ -464,11 +466,17 @@ async function confirmDeleteMultiple() {
     
     tableLoading.value = true
     const ids = selectedRows.value.map(r => r.id)
-    await store.deleteMultipleTransactions(ids)
+    
+    await store.deleteTransaction(ids)           // ← quan trọng: dùng cùng hàm deleteTransaction
+    
     tableLoading.value = false
     selectedRows.value = [] // clear selection
     
-    ElMessage({ type: 'success', message: `Đã xóa ${ids.length} giao dịch thành công!`, duration: 2000 })
+    ElMessage({ 
+      type: 'success', 
+      message: `Đã xóa ${ids.length} giao dịch thành công!`, 
+      duration: 2000 
+    })
   } catch {
     tableLoading.value = false
   }

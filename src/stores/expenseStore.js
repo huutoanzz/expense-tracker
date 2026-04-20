@@ -244,35 +244,55 @@ export const useExpenseStore = defineStore('expense', () => {
     walletBalance.value += (amount - allocatedTotal)
   }
 
-  async function deleteTransaction(id) {
-    const tx = transactions.value.find(t => t.id === id)
-    if (!tx) return
+  async function deleteTransaction(ids) {
+    // Hỗ trợ cả xóa 1 và xóa nhiều
+    const idArray = Array.isArray(ids) ? ids : [ids]
+    if (idArray.length === 0) return
 
-    // Refund logic
-    if (tx.type === 'expense') {
-      const jar = jars.value.find(j => j.categoryValue === tx.category) || jars.value.find(j => j.categoryValue === 'other')
-      if (jar) jar.balance += tx.amount
-      else walletBalance.value += tx.amount
-    } else if (tx.type === 'income') {
-      // Deleting income is tricky if it was auto-allocated
-      // For simplicity, we subtract from walletBalance (can go negative if user spent it)
-      // but the user's rules say total assets must be conserved.
-      walletBalance.value -= tx.amount
-    } else if (tx.type === 'internal') {
-      // Revert internal transfer
-      if (tx.sourceType === 'MAIN' && tx.targetType === 'JAR') {
-        walletBalance.value += tx.amount
-        const jar = jars.value.find(j => j.id === tx.targetId)
-        if (jar) jar.balance -= tx.amount
-      } else if (tx.sourceType === 'JAR' && tx.targetType === 'MAIN') {
+    let totalRefundToWallet = 0
+
+    // ── Xử lý refund trước khi xóa ─────────────────────────────────
+    for (const id of idArray) {
+      const tx = transactions.value.find(t => t.id === id)
+      if (!tx) continue
+
+      if (tx.type === 'expense') {
+        // === SỬA THEO YÊU CẦU: Luôn cộng lại vào Ví chính ===
+        totalRefundToWallet += tx.amount
+
+        // // Logic cũ (cộng vào hũ):
+        // const jar = jars.value.find(j => j.categoryValue === tx.category)
+        //   || jars.value.find(j => j.categoryValue === 'other')
+        // if (jar) jar.balance += tx.amount
+        // else walletBalance.value += tx.amount
+
+      } else if (tx.type === 'income') {
         walletBalance.value -= tx.amount
-        const jar = jars.value.find(j => j.id === tx.sourceId)
-        if (jar) jar.balance += tx.amount
+      } else if (tx.type === 'internal') {
+        // Revert internal transfer
+        if (tx.sourceType === 'MAIN' && tx.targetType === 'JAR') {
+          walletBalance.value += tx.amount
+          const jar = jars.value.find(j => j.id === tx.targetId)
+          if (jar) jar.balance -= tx.amount
+        } else if (tx.sourceType === 'JAR' && tx.targetType === 'MAIN') {
+          walletBalance.value -= tx.amount
+          const jar = jars.value.find(j => j.id === tx.sourceId)
+          if (jar) jar.balance += tx.amount
+        }
       }
     }
 
-    await new Promise(resolve => setTimeout(resolve, 600))
-    transactions.value = transactions.value.filter(t => t.id !== id)
+    // Áp dụng tổng refund một lần (rất nhanh khi xóa nhiều)
+    if (totalRefundToWallet > 0) {
+      walletBalance.value += totalRefundToWallet
+    }
+
+    // ── Xóa giao dịch ─────────────────────────────────────────────
+    await new Promise(resolve => setTimeout(resolve, idArray.length > 1 ? 600 : 400))
+
+    transactions.value = transactions.value.filter(t => !idArray.includes(t.id))
+
+    // Lưu lại
     saveToStorage(transactions.value)
     saveJarsToStorage(jars.value)
     saveWalletToStorage(walletBalance.value)
