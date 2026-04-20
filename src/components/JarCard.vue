@@ -28,40 +28,50 @@
     <div class="jar-balance-section">
       <div class="balance-item">
         <span class="label">Số dư hiện tại</span>
-        <span class="value" :class="{ 'negative': balance < 0 }">{{ formatVND(balance) }}</span>
+        <span class="value" :class="{ 'negative': balance < 0 }">
+          {{ balance.toLocaleString('vi-VN') }} đ
+        </span>
       </div>
     </div>
 
     <div class="jar-progress-section">
       <div class="progress-info">
-        <span class="usage-text">Đã dùng {{ usagePercent }}%</span>
-        <span class="limit-text">Hạn mức: {{ formatVND(limit) }}</span>
+        <!-- Trường hợp chưa phân bổ -->
+        <span v-if="isUnallocated" class="usage-text unallocated">Chưa phân bổ</span>
+        <!-- Các trường hợp còn lại -->
+        <span v-else class="usage-text" :style="{ color: statusConfig.color }">
+          {{ statusConfig.label }}
+        </span>
+        <span class="limit-text">Hạn mức: {{ limit.toLocaleString('vi-VN') }} đ</span>
       </div>
-      <el-progress 
-        :percentage="clampedUsagePercent" 
-        :color="statusColor" 
+
+      <el-progress
+        :percentage="fillPercent"
+        :color="statusConfig.color"
         :stroke-width="8"
         :show-text="false"
         class="custom-progress"
       />
+
       <div class="milestones">
-        <div 
-          v-for="m in milestones" 
-          :key="m" 
-          class="milestone-dot" 
-          :style="{ left: m + '%', background: m <= usagePercent ? statusColor : 'var(--card-border)' }"
+        <div
+          v-for="m in milestones"
+          :key="m"
+          class="milestone-dot"
+          :style="{ left: m + '%', background: m <= fillPercent ? statusConfig.color : 'var(--card-border)' }"
           :title="'Mốc ' + m + '%'"
         ></div>
       </div>
     </div>
 
-    <div v-if="usagePercent >= 100" class="jar-alert error">
+    <!-- Banner cảnh báo -->
+    <div v-if="statusConfig.alertType === 'error'" class="jar-alert error">
       <el-icon><WarningFilled /></el-icon>
-      <span>Đã vượt ngân sách!</span>
+      <span>{{ statusConfig.label }}</span>
     </div>
-    <div v-else-if="usagePercent >= 80" class="jar-alert warning">
+    <div v-else-if="statusConfig.alertType === 'warning'" class="jar-alert warning">
       <el-icon><InfoFilled /></el-icon>
-      <span>Sắp chạm giới hạn ({{ usagePercent }}%)</span>
+      <span>{{ statusConfig.label }}</span>
     </div>
 
     <div class="card-glow" :style="{ background: color }"></div>
@@ -70,7 +80,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { CATEGORIES } from '../stores/expenseStore'
+import { CATEGORIES, useExpenseStore } from '../stores/expenseStore'
 
 const props = defineProps({
   id: String,
@@ -84,41 +94,65 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['edit', 'delete', 'deposit', 'withdraw'])
-
-const formatVND = (value) =>
-  new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value)
+const store = useExpenseStore()
 
 const categoryLabel = computed(() => {
   const cat = CATEGORIES.find(c => c.value === props.categoryValue)
   return cat ? cat.label : 'Khác'
 })
 
-const usagePercent = computed(() => {
-  if (props.limit <= 0) return 0
-  // Usage is (Limit - Balance) if Balance is positive, or (Limit + abs(Balance))? 
-  // Wait, if Balance is 1M and Limit is 5M, I used 4M.
-  // If Balance is -1M and Limit is 5M, I used 6M.
-  // Let's assume balance is what's REMAINING in the jar.
-  // Actually, in the store logic I spent FROM the jar. 
-  // Initial balance is 0. If I add 5M income, balance is 5M.
-  // If I spend 1M, balance is 4M. Usage is 1M / 5M = 20%.
-  
-  const spent = Math.max(0, props.limit - props.balance)
-  return Math.round((spent / props.limit) * 100)
+// Hũ chưa được dùng bao giờ: balance = 0 và không có giao dịch nào
+const isUnallocated = computed(() => {
+  const hasAnyTx = store.transactions.some(t => t.category === props.categoryValue)
+  return props.balance === 0 && !hasAnyTx
 })
 
-const clampedUsagePercent = computed(() => Math.min(100, Math.max(0, usagePercent.value)))
-
-const statusColor = computed(() => {
-  if (usagePercent.value >= 100) return '#ef4444'
-  if (usagePercent.value >= 80) return '#f59e0b'
-  if (usagePercent.value >= 50) return '#3b82f6'
-  return '#10b981'
+// Thanh tiến trình = tiền còn trong hũ / hạn mức (0% = rỗng, 100% = đầy)
+const fillPercent = computed(() => {
+  if (!props.limit) return 0
+  return Math.min(100, Math.max(0, Math.round((props.balance / props.limit) * 100)))
 })
 
-const handleCommand = (cmd) => {
-  emit(cmd, props.id)
-}
+// Config hiển thị theo ngưỡng balance
+const statusConfig = computed(() => {
+  if (isUnallocated.value) {
+    return { label: 'Chưa phân bổ', color: '#6b7280', alertType: null }
+  }
+
+  const pct = fillPercent.value
+
+  if (pct === 0) {
+    // Balance = 0 nhưng đã từng có giao dịch → đã dùng hết
+    return { label: 'Đã dùng hết', color: '#ef4444', alertType: 'error' }
+  }
+
+  if (pct < 20) {
+    // Còn dưới 20% → sắp cạn
+    return {
+      label: `Sắp cạn tiền (còn ${props.balance.toLocaleString('vi-VN')} đ)`,
+      color: '#ef4444',
+      alertType: 'warning'
+    }
+  }
+
+  if (pct <= 50) {
+    // Còn 20–50%
+    return {
+      label: `Còn ${props.balance.toLocaleString('vi-VN')} đ`,
+      color: '#f59e0b',
+      alertType: null
+    }
+  }
+
+  // Còn trên 50%
+  return {
+    label: `Còn ${props.balance.toLocaleString('vi-VN')} đ`,
+    color: '#22c55e',
+    alertType: null
+  }
+})
+
+const handleCommand = (cmd) => emit(cmd, props.id)
 </script>
 
 <style scoped>
@@ -228,6 +262,12 @@ const handleCommand = (cmd) => {
 .usage-text {
   font-weight: 600;
   color: var(--text-primary);
+  transition: color 0.3s ease;
+}
+
+.usage-text.unallocated {
+  color: #6b7280;
+  font-style: italic;
 }
 
 .limit-text {
@@ -240,7 +280,7 @@ const handleCommand = (cmd) => {
 
 .milestones {
   position: absolute;
-  top: 24px; /* Adjust based on label height */
+  top: 24px;
   left: 0;
   right: 0;
   height: 8px;

@@ -141,16 +141,16 @@ export const useExpenseStore = defineStore('expense', () => {
   function migrateData() {
     const totalIn = transactions.value.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
     const totalOut = transactions.value.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
-    
+
     // For legacy data, we calculate what balance should be
     // but the jars might already have balance from my previous implementation.
     // Let's assume jars started with 0 and we only count expenses toward them.
     // However, the user specifically said:
     // "TOTAL ASSETS = WALLET + SUM(JARS) = INCOME - EXPENSE"
-    
+
     const sumJars = jars.value.reduce((s, j) => s + j.balance, 0)
     let calcWallet = totalIn - totalOut - sumJars
-    
+
     if (calcWallet < 0) {
       const adjustment = Math.abs(calcWallet)
       calcWallet = 0
@@ -163,7 +163,7 @@ export const useExpenseStore = defineStore('expense', () => {
         isSystem: true
       }, true) // skip balance updates since this is the adjustment itself
     }
-    
+
     walletBalance.value = calcWallet
     saveWalletToStorage(walletBalance.value)
   }
@@ -231,7 +231,7 @@ export const useExpenseStore = defineStore('expense', () => {
   function performAutoAllocation(amount) {
     const rules = allocationSettings.value.rules || {}
     let allocatedTotal = 0
-    
+
     Object.entries(rules).forEach(([jarId, percent]) => {
       const jar = jars.value.find(j => j.id === jarId)
       if (jar && percent > 0) {
@@ -284,7 +284,7 @@ export const useExpenseStore = defineStore('expense', () => {
     if (jar && walletBalance.value >= amount) {
       walletBalance.value -= amount
       jar.balance += amount
-      
+
       addTransaction({
         type: 'internal',
         amount,
