@@ -23,45 +23,34 @@
         <el-button type="primary" size="large" @click="handleAddJar" round>
           <el-icon class="mr-2"><Plus /></el-icon>Thêm hũ mới
         </el-button>
-        <el-popover 
-          placement="bottom-end" 
-          :width="320" 
-          trigger="click"
-          popper-class="jar-settings-popover"
+
+        <!-- Nút mở AllocationDialog -->
+        <el-button
+          size="large"
+          plain
+          round
+          :type="store.allocationSettings.enabled ? 'success' : 'info'"
+          @click="allocationVisible = true"
         >
-          <template #reference>
-            <el-button type="info" size="large" plain round>
-              <el-icon class="mr-2"><Setting /></el-icon>Phân bổ tự động
-            </el-button>
-          </template>
-          <div class="allocation-settings">
-            <div class="settings-header">
-              <h4>Cài đặt phân bổ thu nhập</h4>
-              <el-switch v-model="store.allocationSettings.enabled" @change="saveSettings" />
-            </div>
-            <p class="settings-desc">Tự động chia tiền vào các hũ khi có thu nhập mới.</p>
-            
-            <div class="allocation-rules mt-4">
-              <div v-for="jar in store.jars" :key="jar.id" class="rule-item">
-                <span class="rule-name">{{ jar.name }}</span>
-                <el-input-number 
-                  v-model="store.allocationSettings.rules[jar.id]" 
-                  :min="0" :max="100" 
-                  size="small"
-                  class="rule-input"
-                  @change="saveSettings"
-                />
-                <span class="rule-unit">%</span>
-              </div>
-            </div>
-            <div class="settings-footer mt-4">
-              <span :class="{ 'error': currentTotalPercent > 100 }">
-                Tổng: {{ currentTotalPercent }}%
-              </span>
-              <span v-if="currentTotalPercent > 100" class="rule-warning">Vượt quá 100%!</span>
-            </div>
-          </div>
-        </el-popover>
+          <el-icon class="mr-2"><Setting /></el-icon>
+          Phân bổ tự động
+          <el-tag
+            v-if="store.allocationSettings.enabled"
+            size="small"
+            type="success"
+            style="margin-left: 8px; border-radius: 6px;"
+          >
+            BẬT
+          </el-tag>
+          <el-tag
+            v-else
+            size="small"
+            type="info"
+            style="margin-left: 8px; border-radius: 6px;"
+          >
+            TẮT
+          </el-tag>
+        </el-button>
       </div>
     </div>
 
@@ -91,9 +80,9 @@
           <el-input v-model="jarForm.name" placeholder="Ví dụ: Hũ ăn chơi" />
         </el-form-item>
         <el-form-item label="Hạn mức hàng tháng (Budget)">
-          <el-input-number 
-            v-model="jarForm.limit" 
-            :min="0" 
+          <el-input-number
+            v-model="jarForm.limit"
+            :min="0"
             :step="500000"
             style="width: 100%"
             placeholder="Số tiền tối đa muốn tiêu"
@@ -128,16 +117,20 @@
       :jar-id="currentJarId"
       :mode="refillMode"
     />
+
+    <!-- Allocation Dialog (tách riêng) -->
+    <AllocationDialog v-model="allocationVisible" />
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive } from 'vue'
 import { vAutoAnimate } from '@formkit/auto-animate/vue'
 import { useExpenseStore, CATEGORIES } from '../stores/expenseStore'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import JarCard from './JarCard.vue'
 import JarRefillModal from './JarRefillModal.vue'
+import AllocationDialog from './AllocationDialog.vue'
 
 const store = useExpenseStore()
 
@@ -146,6 +139,7 @@ const refillVisible = ref(false)
 const refillMode = ref('deposit')
 const editingJar = ref(null)
 const currentJarId = ref(null)
+const allocationVisible = ref(false)
 
 const jarForm = reactive({
   name: '',
@@ -158,23 +152,9 @@ const jarForm = reactive({
 const formatVND = (value) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value)
 
-const currentTotalPercent = computed(() => {
-  return Object.values(store.allocationSettings.rules || {}).reduce((a, b) => a + (b || 0), 0)
-})
-
-function saveSettings() {
-  store.updateAllocationSettings(store.allocationSettings)
-}
-
 function handleAddJar() {
   editingJar.value = null
-  Object.assign(jarForm, {
-    name: '',
-    limit: 5000000,
-    categoryValue: 'other',
-    color: '#6366f1',
-    icon: 'Box'
-  })
+  Object.assign(jarForm, { name: '', limit: 5000000, categoryValue: 'other', color: '#6366f1', icon: 'Box' })
   jarDialogVisible.value = true
 }
 
@@ -265,13 +245,8 @@ function saveJar() {
   overflow: hidden;
 }
 
-.wallet-stat {
-  border-left: 4px solid #10b981;
-}
-
-.jars-stat {
-  border-left: 4px solid #f59e0b;
-}
+.wallet-stat { border-left: 4px solid #10b981; }
+.jars-stat { border-left: 4px solid #f59e0b; }
 
 .stat-icon {
   background: rgba(99, 102, 241, 0.1);
@@ -300,37 +275,7 @@ function saveJar() {
   opacity: 0.1;
 }
 
-.header-actions {
-  display: flex;
-  gap: 12px;
-}
-
-.allocation-settings { padding: 8px 4px; }
-.settings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.settings-header h4 { margin: 0; font-size: 15px; font-weight: 700; color: var(--text-primary); }
-.settings-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px; }
-
-.allocation-rules {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.rule-item { display: flex; align-items: center; gap: 8px; }
-.rule-name { flex: 1; font-size: 13px; color: var(--text-primary); font-weight: 500; }
-.rule-input { width: 100px !important; }
-.rule-unit { font-size: 13px; color: var(--text-secondary); }
-
-.settings-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 13px;
-  font-weight: 600;
-  border-top: 1px solid var(--card-border);
-  padding-top: 12px;
-}
-.error { color: #ef4444; }
-.rule-warning { font-size: 11px; color: #ef4444; }
+.header-actions { display: flex; gap: 12px; }
 
 .jar-grid {
   display: grid;
@@ -341,41 +286,10 @@ function saveJar() {
 .icon-color-pickers { display: flex; gap: 20px; }
 
 .mb-6 { margin-bottom: 24px; }
-.mt-4 { margin-top: 16px; }
 .mr-2 { margin-right: 8px; }
 
 :deep(.jar-dialog) {
   border-radius: 20px;
   background: var(--sidebar-bg) !important;
-}
-
-/* Fix for Popover Theme */
-:global(.jar-settings-popover) {
-  background: var(--sidebar-bg) !important;
-  border-color: var(--card-border) !important;
-  border-radius: 16px !important;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4) !important;
-  padding: 20px !important;
-}
-
-:global(.jar-settings-popover .el-popper__arrow::before) {
-  background: var(--sidebar-bg) !important;
-  border-color: var(--card-border) !important;
-}
-
-:global(.jar-settings-popover .el-input-number__decrease),
-:global(.jar-settings-popover .el-input-number__increase) {
-  background: var(--card-bg) !important;
-  border-color: var(--card-border) !important;
-  color: var(--text-primary) !important;
-}
-
-:global(.jar-settings-popover .el-input__wrapper) {
-  background: var(--card-bg) !important;
-  box-shadow: 0 0 0 1px var(--card-border) inset !important;
-}
-
-:global(.jar-settings-popover .el-input__inner) {
-  color: var(--text-primary) !important;
 }
 </style>

@@ -215,9 +215,18 @@ export const useExpenseStore = defineStore('expense', () => {
         }
       } else if (newTx.type === 'expense') {
         const jar = jars.value.find(j => j.categoryValue === newTx.category) || jars.value.find(j => j.categoryValue === 'other')
-        if (jar && jar.balance >= newTx.amount) {
-          jar.balance -= newTx.amount
+        if (jar && jar.balance > 0) {
+          if (jar.balance >= newTx.amount) {
+            // Hu du tien: tru het tu hu
+            jar.balance -= newTx.amount
+          } else {
+            // Hu khong du: dung het hu, phan con lai tru vi
+            const fromWallet = newTx.amount - jar.balance
+            jar.balance = 0
+            walletBalance.value -= fromWallet
+          }
         } else {
+          // Khong co hu hoac hu trong: tru toan bo tu vi
           walletBalance.value -= newTx.amount
         }
       }
@@ -267,7 +276,23 @@ export const useExpenseStore = defineStore('expense', () => {
         // else walletBalance.value += tx.amount
 
       } else if (tx.type === 'income') {
-        walletBalance.value -= tx.amount
+        // Hoan nguoc dung: neu co auto-allocation thi rut tung hu theo ti le
+        if (allocationSettings.value.enabled && !tx.skipAutoAllocation) {
+          const rules = allocationSettings.value.rules || {}
+          let allocatedTotal = 0
+          Object.entries(rules).forEach(([jarId, percent]) => {
+            const jar = jars.value.find(j => j.id === jarId)
+            if (jar && percent > 0) {
+              const share = Math.round((tx.amount * Number(percent)) / 100)
+              jar.balance = Math.max(0, jar.balance - share)
+              allocatedTotal += share
+            }
+          })
+          // Phan con lai (da vao vi) thi hoan tu vi
+          walletBalance.value -= (tx.amount - allocatedTotal)
+        } else {
+          walletBalance.value -= tx.amount
+        }
       } else if (tx.type === 'internal') {
         // Revert internal transfer
         if (tx.sourceType === 'MAIN' && tx.targetType === 'JAR') {
@@ -443,5 +468,3 @@ export const useExpenseStore = defineStore('expense', () => {
     resetToDefault,
   }
 })
-
-

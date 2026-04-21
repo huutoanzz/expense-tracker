@@ -64,7 +64,7 @@
       </div>
     </div>
 
-    <!-- Banner cảnh báo -->
+    <!-- Banner cảnh báo trạng thái -->
     <div v-if="statusConfig.alertType === 'error'" class="jar-alert error">
       <el-icon><WarningFilled /></el-icon>
       <span>{{ statusConfig.label }}</span>
@@ -72,6 +72,25 @@
     <div v-else-if="statusConfig.alertType === 'warning'" class="jar-alert warning">
       <el-icon><InfoFilled /></el-icon>
       <span>{{ statusConfig.label }}</span>
+    </div>
+
+    <!-- Banner vượt hạn mức: balance > limit -->
+    <div v-if="isOverLimit" class="jar-alert over-limit">
+      <div class="over-limit-main">
+        <el-icon><WarningFilled /></el-icon>
+        <div class="over-limit-text">
+          <span class="over-limit-title">Vượt hạn mức {{ overAmount.toLocaleString('vi-VN') }} đ</span>
+          <span class="over-limit-desc">Hũ đang chứa nhiều hơn hạn mức đặt ra. Bạn có thể rút bớt hoặc tăng hạn mức.</span>
+        </div>
+      </div>
+      <div class="over-limit-actions">
+        <el-button size="small" type="warning" plain @click.stop="$emit('withdraw', id)">
+          Rút bớt
+        </el-button>
+        <el-button size="small" plain @click.stop="$emit('edit', id)">
+          Tăng hạn mức
+        </el-button>
+      </div>
     </div>
 
     <div class="card-glow" :style="{ background: color }"></div>
@@ -101,50 +120,62 @@ const categoryLabel = computed(() => {
   return cat ? cat.label : 'Khác'
 })
 
-// Hũ chưa được dùng bao giờ: balance = 0 và không có giao dịch nào
+// "Chưa phân bổ" = balance = 0 VÀ chưa từng có:
+//   1. giao dịch nạp tiền vào hũ (internal deposit)
+//   2. auto-allocation đã chạy vào hũ này
 const isUnallocated = computed(() => {
-  const hasAnyTx = store.transactions.some(t => t.category === props.categoryValue)
-  return props.balance === 0 && !hasAnyTx
+  if (props.balance > 0) return false
+  // Có transaction nạp thủ công vào hũ này
+  const hasDeposit = store.transactions.some(
+    t => t.type === 'internal' && t.targetType === 'JAR' && t.targetId === props.id
+  )
+  if (hasDeposit) return false
+  // Có expense từ hũ này
+  const hasExpense = store.transactions.some(
+    t => t.type === 'expense' && t.category === props.categoryValue
+  )
+  if (hasExpense) return false
+  // Nếu auto-allocation từng chạy và có rule cho hũ này
+  const hasAutoRule = store.allocationSettings.enabled &&
+    Number(store.allocationSettings.rules?.[props.id] || 0) > 0
+  if (hasAutoRule) return false
+  // Không có gì cả → chưa phân bổ
+  return true
 })
 
-// Thanh tiến trình = tiền còn trong hũ / hạn mức (0% = rỗng, 100% = đầy)
+// Vượt hạn mức: balance > limit
+const isOverLimit = computed(() => props.limit > 0 && props.balance > props.limit)
+const overAmount = computed(() => props.balance - props.limit)
+
+// Thanh tiến trình = balance / limit (cap 100%, có thể tràn nếu vượt)
 const fillPercent = computed(() => {
   if (!props.limit) return 0
   return Math.min(100, Math.max(0, Math.round((props.balance / props.limit) * 100)))
 })
 
-// Config hiển thị theo ngưỡng balance
+// Config hiển thị
 const statusConfig = computed(() => {
   if (isUnallocated.value) {
     return { label: 'Chưa phân bổ', color: '#6b7280', alertType: null }
   }
-
   const pct = fillPercent.value
-
   if (pct === 0) {
-    // Balance = 0 nhưng đã từng có giao dịch → đã dùng hết
     return { label: 'Đã dùng hết', color: '#ef4444', alertType: 'error' }
   }
-
   if (pct < 20) {
-    // Còn dưới 20% → sắp cạn
     return {
       label: `Sắp cạn tiền (còn ${props.balance.toLocaleString('vi-VN')} đ)`,
       color: '#ef4444',
       alertType: 'warning'
     }
   }
-
   if (pct <= 50) {
-    // Còn 20–50%
     return {
       label: `Còn ${props.balance.toLocaleString('vi-VN')} đ`,
       color: '#f59e0b',
       alertType: null
     }
   }
-
-  // Còn trên 50%
   return {
     label: `Còn ${props.balance.toLocaleString('vi-VN')} đ`,
     color: '#22c55e',
@@ -316,6 +347,52 @@ const handleCommand = (cmd) => emit(cmd, props.id)
 .jar-alert.error {
   background: rgba(239, 68, 68, 0.1);
   color: #ef4444;
+}
+
+.jar-alert.over-limit {
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(251, 146, 60, 0.08);
+  border: 1px solid rgba(251, 146, 60, 0.25);
+  color: #fb923c;
+}
+
+.over-limit-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.over-limit-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.over-limit-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fb923c;
+}
+
+.over-limit-desc {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.over-limit-actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.over-limit-actions .el-button {
+  flex: 1;
+  font-size: 12px;
 }
 
 .card-glow {
