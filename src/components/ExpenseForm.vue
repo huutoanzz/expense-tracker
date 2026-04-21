@@ -373,7 +373,7 @@ async function confirmInsufficient() {
 
   ElNotification({
     type: 'success',
-    title: '✅ Thành công',
+    title: 'Thành công',
     message: `Đã thêm "${form.description}"`,
     duration: 2500
   })
@@ -395,7 +395,7 @@ async function doSaveTransaction() {
     skipAutoAllocation: !form.autoAllocation
   })
 
-  ElNotification({ type: 'success', title: '✅ Thành Công', message: `Đã thêm "${form.description}"`, duration: 2500 })
+  ElNotification({ type: 'success', title: 'Thành Công', message: `Đã thêm "${form.description}"`, duration: 2500 })
   submitting.value = false
   close()
 }

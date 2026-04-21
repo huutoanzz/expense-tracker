@@ -187,7 +187,7 @@ function doDeposit(depositAmount) {
   }
 
   if (success) {
-    ElNotification({ type: 'success', title: '✅ Thành công', message: 'Giao dịch đã được ghi', duration: 2500 })
+    ElNotification({ type: 'success', title: 'Thành công', message: 'Giao dịch đã được ghi', duration: 2500 })
     amount.value = 0
     emit('update:modelValue', false)
   } else {

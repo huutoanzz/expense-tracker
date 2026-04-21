@@ -54,7 +54,7 @@
           </div>
           <span class="total-label">
             <template v-if="isOverLimit">⚠️ {{ totalPercent }}% (vượt {{ totalPercent - 100 }}%)</template>
-            <template v-else-if="totalPercent === 100">✅ {{ totalPercent }}% — Hoàn hảo</template>
+            <template v-else-if="totalPercent === 100"> {{ totalPercent }}% — Hoàn hảo</template>
             <template v-else>{{ totalPercent }}% phân bổ · còn {{ 100 - totalPercent }}% vào ví</template>
           </span>
         </div>
@@ -234,7 +234,7 @@ function save() {
     mode: localMode.value,
     rules: { ...localRules.value }
   })
-  ElNotification({ type: 'success', title: '✅ Đã lưu', message: 'Cài đặt phân bổ đã được cập nhật', duration: 2000 })
+  ElNotification({ type: 'success', title: 'Đã lưu', message: 'Cài đặt phân bổ đã được cập nhật', duration: 2000 })
   emit('update:modelValue', false)
 }
 </script>
