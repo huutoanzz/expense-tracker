@@ -1,140 +1,168 @@
 <template>
   <!-- Trigger Button -->
-  <el-button
-    type="primary"
-    size="large"
-    round
-    @click="open"
-    class="add-btn"
-  >
+  <el-button type="primary" size="large" round @click="open" class="add-btn">
     <el-icon class="mr-1"><Plus /></el-icon>
     Thêm Giao Dịch
   </el-button>
 
-  <!-- Dialog thêm giao dịch -->
+  <!-- ── Main Dialog ── -->
   <el-dialog
     v-model="visible"
-    title="Thêm Giao Dịch Mới"
-    width="480px"
+    width="460px"
     destroy-on-close
-    center
     class="expense-dialog"
     :close-on-click-modal="false"
+    :show-close="false"
   >
-    <el-form
-      ref="formRef"
-      :model="form"
-      :rules="rules"
-      label-position="top"
-      class="expense-form"
-    >
-      <!-- Transaction Type -->
-      <el-form-item label="Loại Giao Dịch" prop="type">
-        <el-radio-group v-model="form.type" class="type-group" @change="onTypeChange">
-          <el-radio-button value="expense">
-            <el-icon><ArrowDown /></el-icon> Chi Tiêu
-          </el-radio-button>
-          <el-radio-button value="income">
-            <el-icon><ArrowUp /></el-icon> Thu Nhập
-          </el-radio-button>
-        </el-radio-group>
-      </el-form-item>
+    <template #header>
+      <div class="dialog-topbar">
+        <div style="width:36px"></div>
+        <div class="type-switcher">
+          <button
+            class="type-btn"
+            :class="{ active: form.type === 'expense', expense: form.type === 'expense' }"
+            @click="form.type = 'expense'; onTypeChange()"
+          >
+            <el-icon><ArrowDown /></el-icon> Chi tiêu
+          </button>
+          <button
+            class="type-btn"
+            :class="{ active: form.type === 'income', income: form.type === 'income' }"
+            @click="form.type = 'income'; onTypeChange()"
+          >
+            <el-icon><ArrowUp /></el-icon> Thu nhập
+          </button>
+        </div>
+        <button class="close-pill" @click="close">✕</button>
+      </div>
+    </template>
 
-      <!-- Auto Allocation Toggle (Income Only) -->
-      <el-collapse-transition>
-        <div v-if="form.type === 'income' && store.allocationSettings.enabled" class="allocation-toggle-box mb-4">
-          <div class="toggle-content">
-            <div class="toggle-text">
-              <span class="toggle-title">Tự động phân bổ</span>
-              <span class="toggle-desc">Chia tiền vào các hũ theo cấu hình sẵn có.</span>
-            </div>
-            <el-switch v-model="form.autoAllocation" />
+    <el-form ref="formRef" :model="form" :rules="rules" class="expense-form">
+
+      <!-- ① AMOUNT — hero -->
+      <div class="amount-hero" :class="form.type">
+        <div class="amount-label">Số tiền</div>
+        <el-form-item prop="amount" class="amount-form-item">
+          <div class="amount-display-wrap">
+            <input
+              class="amount-input"
+              type="text"
+              inputmode="numeric"
+              :value="displayAmount"
+              placeholder="0"
+              @input="onAmountInput"
+            />
+            <span class="amount-currency">đ</span>
           </div>
+        </el-form-item>
+
+        <div v-if="form.amount >= 50000000" class="amount-warning">
+          ⚠️ Số tiền lớn — vui lòng kiểm tra lại
+        </div>
+
+        <div class="quick-chips">
+          <button
+            v-for="chip in quickAmounts"
+            :key="chip.value"
+            class="chip"
+            :class="{ active: form.amount === chip.value }"
+            @click="setAmount(chip.value)"
+            type="button"
+          >
+            {{ chip.label }}
+          </button>
+        </div>
+      </div>
+
+      <!-- ② CATEGORY -->
+      <div class="field-section">
+        <div class="field-label">Danh mục</div>
+        <el-form-item prop="category" class="no-margin">
+          <div class="cat-grid">
+            <button
+              v-for="cat in filteredCategories"
+              :key="cat.value"
+              type="button"
+              class="cat-chip"
+              :class="{ selected: form.category === cat.value }"
+              :style="form.category === cat.value
+                ? { background: cat.color + '22', borderColor: cat.color, color: cat.color }
+                : {}"
+              @click="form.category = cat.value"
+            >
+              <span class="cat-chip-dot" :style="{ background: cat.color }"></span>
+              <el-icon><component :is="cat.icon" /></el-icon>
+              <span>{{ cat.label }}</span>
+            </button>
+          </div>
+          <el-select v-model="form.category" style="display:none" />
+        </el-form-item>
+      </div>
+
+      <!-- ③ DESCRIPTION -->
+      <div class="field-section">
+        <div class="field-label">
+          Mô tả <span class="optional-tag">tùy chọn</span>
+        </div>
+        <el-form-item prop="description" class="no-margin">
+          <el-input
+            v-model="form.description"
+            placeholder="Ví dụ: Ăn trưa, Lương tháng..."
+            clearable
+            size="large"
+            class="clean-input"
+          >
+            <template #prefix><el-icon><EditPen /></el-icon></template>
+          </el-input>
+        </el-form-item>
+      </div>
+
+      <!-- ④ DATE -->
+      <div class="field-section">
+        <div class="field-label">Ngày giao dịch</div>
+        <el-form-item prop="date" class="no-margin">
+          <el-date-picker
+            v-model="form.date"
+            type="date"
+            placeholder="Chọn ngày"
+            size="large"
+            style="width: 100%"
+            format="DD/MM/YYYY"
+            value-format="YYYY-MM-DD"
+            class="clean-input"
+          />
+        </el-form-item>
+      </div>
+
+      <!-- ⑤ AUTO ALLOCATION -->
+      <el-collapse-transition>
+        <div v-if="form.type === 'income' && store.allocationSettings.enabled" class="alloc-toggle">
+          <div class="alloc-toggle-left">
+            <span class="alloc-title">Phân bổ tự động</span>
+            <span class="alloc-desc">Chia tiền vào các hũ theo cấu hình</span>
+          </div>
+          <el-switch v-model="form.autoAllocation" active-color="#6366f1" />
         </div>
       </el-collapse-transition>
 
-      <!-- Description -->
-      <el-form-item label="Mô Tả" prop="description">
-        <el-input
-          v-model="form.description"
-          placeholder="Ví dụ: Ăn trưa, Lương tháng..."
-          clearable
-          size="large"
-        >
-          <template #prefix><el-icon><EditPen /></el-icon></template>
-        </el-input>
-      </el-form-item>
-
-      <!-- Amount -->
-      <el-form-item label="Số Tiền (VNĐ)" prop="amount">
-        <el-input-number
-          v-model="form.amount"
-          :min="1"
-          :step="10000"
-          size="large"
-          controls-position="right"
-          style="width: 100%"
-          :formatter="(v) => v ? String(v).replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''"
-          :parser="(v) => Number(String(v).replace(/\./g, ''))"
-          placeholder="0"
-        />
-      </el-form-item>
-
-      <!-- Category -->
-      <el-form-item label="Danh Mục" prop="category">
-        <el-select
-          v-model="form.category"
-          placeholder="Chọn danh mục"
-          size="large"
-          style="width: 100%"
-        >
-          <el-option
-            v-for="cat in filteredCategories"
-            :key="cat.value"
-            :label="cat.label"
-            :value="cat.value"
-          >
-            <div class="cat-option">
-              <span class="cat-dot" :style="{ background: cat.color }"></span>
-              <el-icon><component :is="cat.icon" /></el-icon>
-              {{ cat.label }}
-            </div>
-          </el-option>
-        </el-select>
-      </el-form-item>
-
-      <!-- Date -->
-      <el-form-item label="Ngày" prop="date">
-        <el-date-picker
-          v-model="form.date"
-          type="date"
-          placeholder="Chọn ngày"
-          size="large"
-          style="width: 100%"
-          format="DD/MM/YYYY"
-          value-format="YYYY-MM-DD"
-        />
-      </el-form-item>
     </el-form>
 
     <template #footer>
-      <div class="dialog-footer">
-        <el-button @click="close" size="large">Hủy</el-button>
-        <el-button
-          type="primary"
-          size="large"
-          :loading="submitting"
-          @click="submit"
-          round
-        >
-          <el-icon><Check /></el-icon>
-          Lưu Giao Dịch
-        </el-button>
-      </div>
+      <el-button
+        type="primary"
+        size="large"
+        :loading="submitting"
+        @click="submit"
+        class="submit-btn"
+        :class="form.type"
+      >
+        <el-icon v-if="!submitting"><Check /></el-icon>&nbsp;
+        {{ submitting ? 'Đang lưu...' : (form.type === 'expense' ? 'Ghi chi tiêu' : 'Ghi thu nhập') }}
+      </el-button>
     </template>
   </el-dialog>
 
-  <!-- Popup: Không đủ tiền trong hũ -->
+  <!-- ── Insufficient Balance Dialog ── -->
   <el-dialog
     v-model="showInsufficientDialog"
     title="💸 Không đủ tiền trong hũ"
@@ -151,7 +179,6 @@
         <b class="text-red">{{ fmt(insufficientData.shortfall) }}</b>.
       </p>
 
-      <!-- Option 1: Hũ + Ví chính -->
       <div
         class="option-card"
         :class="{ selected: selectedOption === 1, disabled: !insufficientData.canSplit }"
@@ -160,7 +187,9 @@
         <div class="option-header">
           <div class="option-radio" :class="{ active: selectedOption === 1 }"></div>
           <div class="option-title">Dùng hũ + Ví chính</div>
-          <span v-if="!insufficientData.canSplit" class="option-badge disabled">Không đủ</span>
+          <span v-if="!insufficientData.canSplit" class="option-badge disabled">
+            {{ insufficientData.jarBalance === 0 ? 'Hũ rỗng' : 'Không đủ' }}
+          </span>
         </div>
         <p class="option-desc">
           Dùng hết <b>{{ fmt(insufficientData.jarBalance) }}</b> trong hũ,
@@ -188,7 +217,6 @@
         </div>
       </div>
 
-      <!-- Option 2: Toàn bộ từ Ví chính -->
       <div
         class="option-card"
         :class="{ selected: selectedOption === 2, disabled: !insufficientData.canFull }"
@@ -216,7 +244,6 @@
         </div>
       </div>
 
-      <!-- Cảnh báo nếu cả 2 đều không khả dụng -->
       <p v-if="!insufficientData.canSplit && !insufficientData.canFull" class="text-red warn-text">
         ⚠️ Ví chính không đủ số dư để thực hiện giao dịch này
       </p>
@@ -225,11 +252,7 @@
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="showInsufficientDialog = false">Huỷ</el-button>
-        <el-button
-          type="primary"
-          :disabled="!canConfirmInsufficient"
-          @click="confirmInsufficient"
-        >
+        <el-button type="primary" :disabled="!canConfirmInsufficient" @click="confirmInsufficient">
           Xác nhận
         </el-button>
       </div>
@@ -278,6 +301,31 @@ const rules = {
   date: [{ required: true, message: 'Vui lòng chọn ngày', trigger: 'change' }],
 }
 
+const quickAmounts = [
+  { label: '50k',  value: 50000 },
+  { label: '100k', value: 100000 },
+  { label: '200k', value: 200000 },
+  { label: '500k', value: 500000 },
+  { label: '1M',   value: 1000000 },
+  { label: '5M',   value: 5000000 },
+  { label: '10M',   value: 10000000 },
+  { label: '20M',   value: 20000000 }
+]
+
+const displayAmount = computed(() =>
+  form.amount ? form.amount.toLocaleString('vi-VN') : ''
+)
+
+function onAmountInput(e) {
+  const raw = e.target.value.replace(/[^\d]/g, '')
+  const num = parseInt(raw, 10)
+  form.amount = isNaN(num) ? null : num
+}
+
+function setAmount(val) {
+  form.amount = val
+}
+
 const filteredCategories = computed(() =>
   form.type === 'income'
     ? CATEGORIES.filter(c => c.value === 'income' || c.value === 'other')
@@ -298,19 +346,18 @@ function open() { visible.value = true }
 function close() {
   visible.value = false
   formRef.value?.resetFields()
+  form.amount = null
 }
 
 async function submit() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
 
-  // Chỉ kiểm tra hũ khi là chi tiêu
   if (form.type === 'expense') {
     const jar = store.jars.find(j => j.categoryValue === form.category)
       || store.jars.find(j => j.categoryValue === 'other')
 
     if (jar && form.amount > jar.balance) {
-      // Tính toán trước rồi mở popup
       const shortfall = form.amount - jar.balance
       insufficientData.value = {
         jarId: jar.id,
@@ -320,17 +367,15 @@ async function submit() {
         shortfall,
         walletAfterSplit: store.walletBalance - shortfall,
         walletAfterFull: store.walletBalance - form.amount,
-        canSplit: store.walletBalance >= shortfall,
+        canSplit: jar.balance > 0 && store.walletBalance >= shortfall,  
         canFull: store.walletBalance >= form.amount,
       }
-      // Chọn option mặc định khả dụng
       selectedOption.value = insufficientData.value.canSplit ? 1 : 2
       showInsufficientDialog.value = true
       return
     }
   }
 
-  // Bình thường không vượt hũ
   await doSaveTransaction()
 }
 
@@ -349,35 +394,22 @@ async function confirmInsufficient() {
   }
 
   if (selectedOption.value === 1) {
-    // ==================== OPTION 1: HŨ + VÍ CHÍNH ====================
     const jar = store.jars.find(j => j.id === data.jarId)
     if (jar) jar.balance = 0
-
-    // Trừ shortfall từ ví TRƯỚC (hoặc sau cũng được vì skip)
     store.walletBalance -= data.shortfall
-
-    // Phải skip balance update vì chúng ta đã xử lý thủ công
     store.addTransaction({
       ...payload,
       amount: data.amount,
       splitFromJar: data.jarId,
       jarAmount: data.jarBalance,
       walletAmount: data.shortfall,
-    }, true)   // ←←← THÊM , true ở đây là quan trọng nhất
-
+    }, true)
   } else {
-    // ==================== OPTION 2: TOÀN BỘ TỪ VÍ CHÍNH ====================
     store.walletBalance -= data.amount
     store.addTransaction({ ...payload, amount: data.amount }, true)
   }
 
-  ElNotification({
-    type: 'success',
-    title: 'Thành công',
-    message: `Đã thêm "${form.description}"`,
-    duration: 2500
-  })
-
+  ElNotification({ type: 'success', title: 'Thành công', message: `Đã thêm "${form.description}"`, duration: 2500 })
   submitting.value = false
   close()
 }
@@ -402,6 +434,7 @@ async function doSaveTransaction() {
 </script>
 
 <style scoped>
+/* ── Trigger button ── */
 .add-btn {
   font-weight: 700;
   letter-spacing: 0.5px;
@@ -412,150 +445,254 @@ async function doSaveTransaction() {
   box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
 .add-btn:hover {
   transform: translateY(-3px);
   box-shadow: 0 15px 25px -5px rgba(99, 102, 241, 0.5);
   filter: brightness(1.1);
 }
-
 .add-btn .mr-1 { margin-right: 8px; }
 
-.expense-form { padding-top: 8px; }
-
-.allocation-toggle-box {
-  background: rgba(99, 102, 241, 0.05);
-  padding: 12px 16px;
-  border-radius: 12px;
-  border: 1px solid rgba(99, 102, 241, 0.1);
+/* ── Dialog shell ── */
+:deep(.expense-dialog) {
+  background: var(--sidebar-bg) !important;
+  border-radius: 24px !important;
+  overflow: hidden !important;
 }
+:deep(.expense-dialog .el-dialog__header) { padding: 0 !important; margin: 0 !important; }
+:deep(.expense-dialog .el-dialog__body)   { padding: 0 !important; }
+:deep(.expense-dialog .el-dialog__footer) { padding: 0 20px 20px !important; }
 
-.toggle-content {
+/* ── Topbar ── */
+.dialog-topbar {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
+  padding: 16px 20px 0;
 }
 
-.toggle-text { display: flex; flex-direction: column; }
-.toggle-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
-.toggle-desc { font-size: 12px; color: var(--text-secondary); }
-
-.expense-form :deep(.el-form-item) { margin-bottom: 24px; }
-.expense-form :deep(.el-form-item:last-child) { margin-bottom: 0; }
-
-.cat-option { display: flex; align-items: center; gap: 12px; padding: 4px 0; }
-.cat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-
-.dialog-footer { display: flex; justify-content: flex-end; gap: 12px; width: 100%; }
-.dialog-footer .el-button { min-width: 110px; }
-
-/* Insufficient dialog */
-.insufficient-body {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.insufficient-desc {
-  font-size: 14px;
-  color: var(--text-secondary);
-  line-height: 1.6;
-}
-
-.option-card {
-  border: 2px solid var(--card-border);
-  border-radius: 14px;
-  padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.option-card:hover:not(.disabled) {
-  border-color: #6366f1;
-  background: rgba(99, 102, 241, 0.04);
-}
-
-.option-card.selected {
-  border-color: #6366f1;
-  background: rgba(99, 102, 241, 0.07);
-}
-
-.option-card.disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.option-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.option-radio {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 2px solid var(--card-border);
-  flex-shrink: 0;
+.close-pill {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: none; background: var(--bg-main);
+  color: var(--text-secondary); font-size: 14px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
   transition: all 0.2s;
 }
+.close-pill:hover { background: rgba(239,68,68,0.1); color: #ef4444; }
 
+/* ── Type switcher ── */
+.type-switcher {
+  display: flex; background: var(--bg-main);
+  border-radius: 12px; padding: 4px; gap: 4px;
+}
+
+.type-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 18px; border-radius: 9px; border: none;
+  background: transparent; color: var(--text-secondary);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all 0.22s ease; font-family: inherit;
+}
+
+.type-btn.active.expense {
+  background: linear-gradient(135deg, #ef4444, #f97316);
+  color: #fff; box-shadow: 0 4px 12px rgba(239,68,68,0.3);
+}
+.type-btn.active.income {
+  background: linear-gradient(135deg, #10b981, #22c55e);
+  color: #fff; box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+}
+
+/* ── Amount hero ── */
+.amount-hero {
+  padding: 20px 20px 18px;
+  text-align: center;
+  transition: background 0.3s ease;
+}
+.amount-hero.expense {
+  background: linear-gradient(180deg, rgba(239,68,68,0.07) 0%, transparent 100%);
+}
+.amount-hero.income {
+  background: linear-gradient(180deg, rgba(16,185,129,0.07) 0%, transparent 100%);
+}
+
+.amount-label {
+  font-size: 11px; font-weight: 700; color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;
+}
+
+.amount-form-item { margin-bottom: 0 !important; }
+:deep(.amount-form-item .el-form-item__content) { justify-content: center; }
+:deep(.amount-form-item .el-form-item__error)   { text-align: center; }
+
+.amount-display-wrap {
+  display: flex; align-items: baseline;
+  justify-content: center; gap: 6px;
+}
+
+.amount-input {
+  border: none; background: transparent; outline: none;
+  font-size: 44px; font-weight: 800; color: var(--text-primary);
+  letter-spacing: -2px; text-align: right;
+  width: auto; min-width: 60px; max-width: 260px;
+  font-family: inherit; caret-color: #6366f1;
+}
+.amount-input::placeholder { color: var(--card-border); }
+
+.amount-currency {
+  font-size: 22px; font-weight: 700; color: var(--text-secondary); flex-shrink: 0;
+}
+
+.amount-warning {
+  margin-top: 6px; font-size: 12px; font-weight: 600; color: #f59e0b;
+  background: rgba(245,158,11,0.1); border-radius: 8px;
+  padding: 6px 12px; display: inline-block;
+}
+
+/* ── Quick chips ── */
+.quick-chips {
+  display: flex; justify-content: center;
+  gap: 8px; margin-top: 14px; flex-wrap: wrap;
+}
+
+.chip {
+  padding: 7px 14px; border-radius: 20px;
+  border: 1.5px solid var(--card-border);
+  background: var(--bg-main); color: var(--text-secondary);
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: all 0.18s ease; font-family: inherit;
+}
+.chip:hover {
+  border-color: #6366f1; color: #6366f1;
+  background: rgba(99,102,241,0.06); transform: translateY(-1px);
+}
+.chip.active {
+  background: #6366f1; border-color: #6366f1; color: #fff;
+  box-shadow: 0 4px 12px rgba(99,102,241,0.35); transform: translateY(-1px);
+}
+
+/* ── Field sections ── */
+.expense-form {
+  padding: 0 20px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+.field-section { display: flex; flex-direction: column; gap: 8px; }
+
+.field-label {
+  font-size: 11px; font-weight: 700; color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: 0.6px;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.optional-tag {
+  font-size: 10px; font-weight: 600; color: var(--text-secondary);
+  background: var(--bg-main); padding: 2px 7px; border-radius: 6px;
+  text-transform: none; letter-spacing: 0; opacity: 0.7;
+}
+
+.no-margin { margin-bottom: 0 !important; }
+
+/* ── Category grid ── */
+.cat-grid { display: flex; flex-wrap: wrap; gap: 7px; }
+
+.cat-chip {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 11px; border-radius: 10px;
+  border: 1.5px solid var(--card-border);
+  background: var(--bg-main); color: var(--text-secondary);
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: all 0.18s ease; font-family: inherit; white-space: nowrap;
+}
+.cat-chip:hover {
+  border-color: rgba(99,102,241,0.4);
+  color: var(--text-primary); transform: translateY(-1px);
+}
+.cat-chip.selected {
+  font-weight: 700; transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+}
+.cat-chip-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── Clean inputs ── */
+:deep(.clean-input .el-input__wrapper) {
+  border-radius: 12px !important;
+  border: 1.5px solid var(--card-border) !important;
+  background: var(--bg-main) !important;
+  box-shadow: none !important;
+}
+
+/* ── Auto allocation ── */
+.alloc-toggle {
+  display: flex; justify-content: space-between; align-items: center;
+  background: rgba(99,102,241,0.05);
+  border: 1px solid rgba(99,102,241,0.12);
+  border-radius: 14px; padding: 14px 16px;
+}
+.alloc-toggle-left { display: flex; flex-direction: column; gap: 3px; }
+.alloc-title { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.alloc-desc { font-size: 12px; color: var(--text-secondary); }
+
+/* ── Submit button ── */
+.submit-btn {
+  width: 100% !important; height: 52px;
+  font-size: 16px !important; font-weight: 700 !important;
+  border-radius: 14px !important; border: none !important;
+  letter-spacing: 0.3px; transition: all 0.25s ease !important;
+}
+.submit-btn.expense {
+  background: linear-gradient(135deg, #ef4444, #f97316) !important;
+  box-shadow: 0 8px 20px -4px rgba(239,68,68,0.4) !important;
+}
+.submit-btn.income {
+  background: linear-gradient(135deg, #10b981, #22c55e) !important;
+  box-shadow: 0 8px 20px -4px rgba(16,185,129,0.4) !important;
+}
+.submit-btn:hover { transform: translateY(-2px); filter: brightness(1.08); }
+
+/* ── Insufficient dialog ── */
+.insufficient-body { display: flex; flex-direction: column; gap: 14px; }
+.insufficient-desc { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+
+.option-card {
+  border: 2px solid var(--card-border); border-radius: 14px;
+  padding: 14px 16px; display: flex; flex-direction: column;
+  gap: 10px; cursor: pointer; transition: all 0.2s ease;
+}
+.option-card:hover:not(.disabled) { border-color: #6366f1; background: rgba(99,102,241,0.04); }
+.option-card.selected { border-color: #6366f1; background: rgba(99,102,241,0.07); }
+.option-card.disabled { opacity: 0.45; cursor: not-allowed; }
+
+.option-header { display: flex; align-items: center; gap: 10px; }
+.option-radio {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid var(--card-border); flex-shrink: 0; transition: all 0.2s;
+}
 .option-radio.active {
-  border-color: #6366f1;
-  background: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  border-color: #6366f1; background: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
 }
-
-.option-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-primary);
-  flex: 1;
-}
-
+.option-title { font-size: 14px; font-weight: 700; color: var(--text-primary); flex: 1; }
 .option-badge.disabled {
-  font-size: 11px;
-  font-weight: 600;
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  padding: 2px 8px;
-  border-radius: 6px;
+  font-size: 11px; font-weight: 600;
+  background: rgba(239,68,68,0.1); color: #ef4444;
+  padding: 2px 8px; border-radius: 6px;
 }
-
-.option-desc {
-  font-size: 13px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-  margin: 0;
-}
-
+.option-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin: 0; }
 .option-preview {
-  background: var(--bg-main);
-  border-radius: 10px;
-  padding: 10px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  background: var(--bg-main); border-radius: 10px;
+  padding: 10px 14px; display: flex; flex-direction: column; gap: 8px;
 }
-
 .preview-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  color: var(--text-secondary);
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; color: var(--text-secondary);
 }
-
 .prev-before { color: var(--text-secondary); }
-.prev-arrow { margin: 0 6px; color: var(--text-secondary); }
+.prev-arrow { margin: 0 6px; }
 .prev-after { font-weight: 700; color: #22c55e; }
 .prev-after.zero { color: #ef4444; }
 
+.dialog-footer { display: flex; justify-content: flex-end; gap: 12px; width: 100%; }
+.dialog-footer .el-button { min-width: 110px; }
 .text-red { color: #ef4444; }
 .warn-text { font-size: 13px; font-weight: 600; text-align: center; }
-
-.mb-4 { margin-bottom: 16px; }
 </style>

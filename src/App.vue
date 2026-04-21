@@ -309,7 +309,7 @@
               class="action-btn mb-3"
               @click="handleClearData"
             >
-              <el-icon><Delete /></el-icon>
+              <el-icon><Delete /></el-icon>&nbsp;
               Xóa Tất Cả Giao Dịch
             </el-button>
             
@@ -318,7 +318,7 @@
               class="action-btn"
               @click="handleResetDefault"
             >
-              <el-icon><RefreshLeft /></el-icon>
+              <el-icon><RefreshLeft /></el-icon>&nbsp;
               Đặt Lại Mặc Định
             </el-button>
           </div>
@@ -370,7 +370,7 @@ const navItems = computed(() => [
   {
     key: 'jars',
     label: 'Hũ Chi Tiêu',
-    icon: 'GoldMedal',
+    icon: 'Wallet',
   },
   {
     key: 'transactions',
@@ -438,7 +438,79 @@ const formatDate = (dateStr) =>
 const rowClass = ({ row }) => (row.type === 'income' ? 'income-row' : 'expense-row')
 
 // ── Delete ────────────────────────────────────────────────
+// ── Helper: kiem tra giao dich co lien quan hu da giai the khong ──
+// Tra ve ten hu (string) neu giai the, null neu ok
+function getDissolvedJarName(row) {
+  // Case 1: expense co sourceBreakdown (tx moi)
+  if (row.type === 'expense' && row.sourceBreakdown?.jarId) {
+    const jar = store.jars.find(j => j.id === row.sourceBreakdown.jarId)
+    if (!jar) {
+      // Tim ten hu tu log giai the
+      const dissolveLog = store.transactions.find(
+        t => t.type === 'internal' &&
+             t.sourceType === 'JAR' &&
+             t.sourceId === row.sourceBreakdown.jarId
+      )
+      return dissolveLog?.description?.replace('Giải thể hũ ', '').replace(' - Hoàn trả ví', '')
+        ?? 'Hũ đã xóa'
+    }
+  }
+
+  // Case 2: expense cu (khong co sourceBreakdown) - tim hu theo category
+  if (row.type === 'expense' && !row.sourceBreakdown) {
+    const jar = store.jars.find(j => j.categoryValue === row.category)
+    // Neu khong tim thay hu nao -> co the hu da bi giai the
+    // Kiem tra co log nap tien vao hu co category nay khong
+    if (!jar) {
+      const depositLog = store.transactions.find(
+        t => t.type === 'internal' &&
+             t.sourceType === 'MAIN' &&
+             t.targetType === 'JAR' &&
+             t.category === row.category
+      )
+      if (depositLog) {
+        // Co log nap -> hu tung ton tai, gio mat -> da giai the
+        return row.category
+      }
+    }
+  }
+
+  // Case 3: internal MAIN->JAR (log nap tien) ma hu khong con
+  if (row.type === 'internal' &&
+      row.sourceType === 'MAIN' &&
+      row.targetType === 'JAR') {
+    const jar = store.jars.find(j => j.id === row.targetId)
+    if (!jar) {
+      return row.description?.replace('Nạp tiền vào ', '') ?? 'Hũ đã xóa'
+    }
+  }
+
+  return null  // Khong co van de, cho phep xoa
+}
+
 async function confirmDelete(row) {
+  // ── Kiem tra giao dich lien quan hu da giai the ──────────────
+  const dissolvedJarName = getDissolvedJarName(row)
+  if (dissolvedJarName !== null) {
+    await ElMessageBox.alert(
+      `<div style="line-height:1.8;font-size:14px">
+        <p>Giao dịch này liên quan đến hũ <b>"${dissolvedJarName}"</b> đã bị giải thể.</p>
+        <p style="margin-top:10px">Ấn xóa giao dịch này có thể <b>gây sai lệch số dư</b> vì tiền đã được hoàn về ví khi giải thể hũ.</p>
+        <p style="margin-top:10px;padding:10px 14px;background:rgba(245,158,11,0.1);border-radius:8px;color:#f59e0b">
+          ⚠️ Để đảm bảo tính chính xác, vui lòng <b>không xóa</b> các giao dịch thuộc hũ đã giải thể.
+        </p>
+      </div>`,
+      'Hũ đã giải thể — Không thể xóa',
+      {
+        confirmButtonText: 'Đã hiểu',
+        type: 'warning',
+        dangerouslyUseHTMLString: true,
+        center: false,
+      }
+    )
+    return
+  }
+
   try {
     await ElMessageBox.confirm(
       `Bạn có chắc muốn xóa giao dịch "<b>${row.description}</b>"?`,
@@ -451,11 +523,11 @@ async function confirmDelete(row) {
         confirmButtonClass: 'el-button--danger',
       }
     )
-    
+
     tableLoading.value = true
-    await store.deleteTransaction(row.id)        // ← đã hỗ trợ single
+    await store.deleteTransaction(row.id)
     tableLoading.value = false
-    
+
     ElMessage({ type: 'success', message: 'Đã xóa giao dịch thành công!', duration: 2000 })
   } catch {
     tableLoading.value = false

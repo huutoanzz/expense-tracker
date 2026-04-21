@@ -11,7 +11,7 @@
           <div class="stat-glow"></div>
         </div>
         <div class="stat-card jars-stat animate__animated animate__fadeInLeft" style="animation-delay: 0.1s">
-          <div class="stat-icon"><GoldMedal /></div>
+          <div class="stat-icon"><Money /></div>
           <div class="stat-info">
             <span class="stat-label">Tổng trong hũ</span>
             <span class="stat-value">{{ formatVND(store.totalJarBalance) }}</span>

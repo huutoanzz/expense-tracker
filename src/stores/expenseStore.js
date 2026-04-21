@@ -219,15 +219,20 @@ export const useExpenseStore = defineStore('expense', () => {
           if (jar.balance >= newTx.amount) {
             // Hu du tien: tru het tu hu
             jar.balance -= newTx.amount
+            // Ghi nguon tien chinh xac tai thoi diem chi
+            newTx.sourceBreakdown = { jarId: jar.id, fromJar: newTx.amount, fromWallet: 0 }
           } else {
             // Hu khong du: dung het hu, phan con lai tru vi
-            const fromWallet = newTx.amount - jar.balance
+            const fromJar = jar.balance
+            const fromWallet = newTx.amount - fromJar
             jar.balance = 0
             walletBalance.value -= fromWallet
+            newTx.sourceBreakdown = { jarId: jar.id, fromJar, fromWallet }
           }
         } else {
           // Khong co hu hoac hu trong: tru toan bo tu vi
           walletBalance.value -= newTx.amount
+          newTx.sourceBreakdown = { jarId: null, fromJar: 0, fromWallet: newTx.amount }
         }
       }
     }
@@ -266,14 +271,31 @@ export const useExpenseStore = defineStore('expense', () => {
       if (!tx) continue
 
       if (tx.type === 'expense') {
-        // === SỬA THEO YÊU CẦU: Luôn cộng lại vào Ví chính ===
-        totalRefundToWallet += tx.amount
-
-        // // Logic cũ (cộng vào hũ):
-        // const jar = jars.value.find(j => j.categoryValue === tx.category)
-        //   || jars.value.find(j => j.categoryValue === 'other')
-        // if (jar) jar.balance += tx.amount
-        // else walletBalance.value += tx.amount
+        // Hoan tien dua tren sourceBreakdown - tranh double-count
+        const bd = tx.sourceBreakdown
+        if (bd) {
+          // Co sourceBreakdown: hoan chinh xac theo nguon goc
+          if (bd.fromJar > 0) {
+            const jar = jars.value.find(j => j.id === bd.jarId)
+            if (jar) {
+              jar.balance += bd.fromJar  // hu van con: hoan ve hu
+            } else {
+              totalRefundToWallet += bd.fromJar  // hu da bi xoa: fallback ve vi
+            }
+          }
+          if (bd.fromWallet > 0) {
+            totalRefundToWallet += bd.fromWallet
+          }
+        } else {
+          // Khong co sourceBreakdown (tx cu truoc khi update): fallback an toan
+          const jar = jars.value.find(j => j.categoryValue === tx.category)
+            || jars.value.find(j => j.categoryValue === 'other')
+          if (jar) {
+            jar.balance += tx.amount
+          } else {
+            totalRefundToWallet += tx.amount
+          }
+        }
 
       } else if (tx.type === 'income') {
         // Hoan nguoc dung: neu co auto-allocation thi rut tung hu theo ti le
