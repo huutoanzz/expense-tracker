@@ -409,12 +409,14 @@ const filterType = ref('')
 const filterCategory = ref('')
 
 const filteredTransactions = computed(() => {
-  return store.transactions.filter(t => {
-    const matchSearch = t.description.toLowerCase().includes(search.value.toLowerCase())
-    const matchType = filterType.value ? t.type === filterType.value : true
-    const matchCat = filterCategory.value ? t.category === filterCategory.value : true
-    return matchSearch && matchType && matchCat
-  })
+  return store.transactions
+    .filter(t => {
+      const matchSearch = t.description.toLowerCase().includes(search.value.toLowerCase())
+      const matchType = filterType.value ? t.type === filterType.value : true
+      const matchCat = filterCategory.value ? t.category === filterCategory.value : true
+      return matchSearch && matchType && matchCat
+    })
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
 })
 
 // ── Category helpers ─────────────────────────────────────
