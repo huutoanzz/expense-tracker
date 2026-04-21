@@ -525,3 +525,71 @@ input:-webkit-autofill:active {
 :deep(.settings-dialog .el-dialog__body) {
   padding: 10px 28px 28px !important;
 }
+/* ── Warning Card SUBTLE & THEME-PERFECT ────────────────── */
+.delete-warning-card {
+  background: var(--card-bg);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  border-left: 4px solid var(--accent);
+  border-radius: 14px;
+  padding: 18px 22px;
+  margin-bottom: 24px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(8px);
+}
+
+.delete-warning-card:hover {
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.12);
+  border-left-color: var(--accent-2);
+  transform: translateY(-1px);
+}
+
+.warning-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.warning-icon {
+  color: var(--accent) !important;
+  font-size: 18px;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.warning-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.warning-text {
+  margin: 0;
+  font-size: 13.8px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.warning-text strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.warning-text em {
+  color: var(--text-secondary);
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+/* Dark theme specific */
+body.theme-black .delete-warning-card,
+body.theme-blue .delete-warning-card {
+  border-color: rgba(99, 102, 241, 0.25);
+}
+
+body.theme-black .warning-text strong,
+body.theme-blue .warning-text strong {
+  color: #a5b4fc;
+}

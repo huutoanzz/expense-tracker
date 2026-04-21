@@ -76,6 +76,18 @@
 
       <!-- ── Transactions Tab ───────────────────────── -->
       <section v-if="activeTab === 'transactions'" class="tab-section animate__animated animate__fadeIn">
+        <!-- ✅ CẢNH BÁO THEME-FRIENDLY (KHÔNG CAM) -->
+        <div class="delete-warning-card mb-4">
+          <div class="warning-header">
+            <el-icon class="warning-icon"><Warning /></el-icon>
+            <span class="warning-title">Lưu ý khi xóa giao dịch</span>
+          </div>
+          <p class="warning-text">
+            Xóa giao dịch có thể làm sai lệch dòng tiền, 
+            <strong>đặc biệt với giao dịch phức tạp (hũ, phân chia tự động)</strong>.<br>
+            <em>Chỉ dùng để chỉnh sửa đơn giản, không xóa tùy tiện hoặc sai trình tự</em>
+          </p>
+        </div>
         <!-- Filter Bar -->
         <div class="filter-bar">
           <el-input
