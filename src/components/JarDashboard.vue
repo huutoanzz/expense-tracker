@@ -305,14 +305,53 @@ function handleEditJar(id) {
 }
 
 async function handleDeleteJar(id) {
+  const jar = store.jars.find(j => j.id === id)
+  if (!jar) return
+
+  // Đếm số giao dịch liên quan đến hũ này
+  const relatedTxCount = store.transactions.filter(t =>
+    (t.type === 'expense' && t.category === jar.categoryValue) ||
+    (t.type === 'internal' && (t.targetId === id || t.sourceId === id))
+  ).length
+
+  const balanceText = jar.balance > 0
+    ? `<p style="margin-top:10px">Số dư còn lại <b>${jar.balance.toLocaleString('vi-VN')} đ</b> sẽ được hoàn về Ví chính.</p>`
+    : ''
+
+  const txWarning = relatedTxCount > 0
+    ? `<div style="margin-top:12px;padding:12px 14px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:10px;">
+        <p style="color:#ef4444;font-weight:700;font-size:13px">⛔ Cảnh báo không thể khôi phục</p>
+        <p style="color:#ef4444;font-size:13px;margin-top:4px">
+          Hũ này có <b>${relatedTxCount} giao dịch</b> liên quan.<br>
+          Sau khi xóa hũ, <b>tất cả giao dịch của hũ sẽ không thể xóa hoặc chỉnh sửa</b> — chúng sẽ bị khoá vĩnh viễn.
+        </p>
+       </div>`
+    : `<div style="margin-top:12px;padding:10px 14px;background:rgba(245,158,11,0.08);border-radius:10px;">
+        <p style="color:#f59e0b;font-size:13px">⚠️ Thao tác này không thể hoàn tác.</p>
+       </div>`
+
   try {
     await ElMessageBox.confirm(
-      'Bạn có chắc muốn xóa hũ này? Số dư còn lại sẽ được chuyển trả vào Ví chính.',
-      'Xác nhận xóa',
-      { type: 'warning' }
+      `<div style="line-height:1.7;font-size:14px">
+        <p>Bạn sắp xóa hũ <b>"${jar.name}"</b>.</p>
+        ${balanceText}
+        ${txWarning}
+      </div>`,
+      '🗑️ Xóa hũ vĩnh viễn',
+      {
+        confirmButtonText: 'Xác nhận xóa',
+        cancelButtonText: 'Huỷ',
+        type: 'error',
+        dangerouslyUseHTMLString: true,
+        confirmButtonClass: 'el-button--danger',
+      }
     )
     store.deleteJar(id)
-    ElMessage.success('Đã xóa hũ và hoàn tiền về ví chính')
+    ElMessage({
+      type: 'warning',
+      message: `Đã xóa hũ "${jar.name}". Các giao dịch liên quan đã bị khoá.`,
+      duration: 4000,
+    })
   } catch { /* cancelled */ }
 }
 

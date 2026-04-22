@@ -441,41 +441,10 @@ const rowClass = ({ row }) => (row.type === 'income' ? 'income-row' : 'expense-r
 // ── Helper: kiem tra giao dich co lien quan hu da giai the khong ──
 // Tra ve ten hu (string) neu giai the, null neu ok
 function getDissolvedJarName(row) {
-  // Case 1: expense co sourceBreakdown (tx moi)
-  if (row.type === 'expense' && row.sourceBreakdown?.jarId) {
-    const jar = store.jars.find(j => j.id === row.sourceBreakdown.jarId)
-    if (!jar) {
-      // Tim ten hu tu log giai the
-      const dissolveLog = store.transactions.find(
-        t => t.type === 'internal' &&
-             t.sourceType === 'JAR' &&
-             t.sourceId === row.sourceBreakdown.jarId
-      )
-      return dissolveLog?.description?.replace('Giải thể hũ ', '').replace(' - Hoàn trả ví', '')
-        ?? 'Hũ đã xóa'
-    }
-  }
+  // Chỉ khoá các giao dịch INTERNAL của hũ đã giải thể.
+  // Expense của hũ đã giải thể → vẫn cho phép xóa (hoàn về ví chính).
 
-  // Case 2: expense cu (khong co sourceBreakdown) - tim hu theo category
-  if (row.type === 'expense' && !row.sourceBreakdown) {
-    const jar = store.jars.find(j => j.categoryValue === row.category)
-    // Neu khong tim thay hu nao -> co the hu da bi giai the
-    // Kiem tra co log nap tien vao hu co category nay khong
-    if (!jar) {
-      const depositLog = store.transactions.find(
-        t => t.type === 'internal' &&
-             t.sourceType === 'MAIN' &&
-             t.targetType === 'JAR' &&
-             t.category === row.category
-      )
-      if (depositLog) {
-        // Co log nap -> hu tung ton tai, gio mat -> da giai the
-        return row.category
-      }
-    }
-  }
-
-  // Case 3: internal MAIN->JAR (log nap tien) ma hu khong con
+  // Case 1: internal MAIN->JAR (log nạp tiền) mà hũ không còn → KHOÁ
   if (row.type === 'internal' &&
       row.sourceType === 'MAIN' &&
       row.targetType === 'JAR') {
@@ -485,7 +454,18 @@ function getDissolvedJarName(row) {
     }
   }
 
-  return null  // Khong co van de, cho phep xoa
+  // Case 2: internal JAR->MAIN (log rút/giải thể) mà hũ không còn → KHOÁ
+  if (row.type === 'internal' &&
+      row.sourceType === 'JAR' &&
+      row.targetType === 'MAIN') {
+    const jar = store.jars.find(j => j.id === row.sourceId)
+    if (!jar) {
+      return row.description?.replace('Rút tiền từ ', '').replace('Giải thể hũ ', '').replace(' - Hoàn trả ví', '') ?? 'Hũ đã xóa'
+    }
+  }
+
+  // Expense (dù hũ còn hay đã giải thể) → CHO PHÉP xóa, hoàn về ví chính
+  return null
 }
 
 async function confirmDelete(row) {

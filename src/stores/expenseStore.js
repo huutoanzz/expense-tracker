@@ -271,31 +271,9 @@ export const useExpenseStore = defineStore('expense', () => {
       if (!tx) continue
 
       if (tx.type === 'expense') {
-        // Hoan tien dua tren sourceBreakdown - tranh double-count
-        const bd = tx.sourceBreakdown
-        if (bd) {
-          // Co sourceBreakdown: hoan chinh xac theo nguon goc
-          if (bd.fromJar > 0) {
-            const jar = jars.value.find(j => j.id === bd.jarId)
-            if (jar) {
-              jar.balance += bd.fromJar  // hu van con: hoan ve hu
-            } else {
-              totalRefundToWallet += bd.fromJar  // hu da bi xoa: fallback ve vi
-            }
-          }
-          if (bd.fromWallet > 0) {
-            totalRefundToWallet += bd.fromWallet
-          }
-        } else {
-          // Khong co sourceBreakdown (tx cu truoc khi update): fallback an toan
-          const jar = jars.value.find(j => j.categoryValue === tx.category)
-            || jars.value.find(j => j.categoryValue === 'other')
-          if (jar) {
-            jar.balance += tx.amount
-          } else {
-            totalRefundToWallet += tx.amount
-          }
-        }
+        // Luon hoan toan bo ve Vi chinh (khong hoan ve hu)
+        // Du tien goc tu hu hay vi, khi xoa -> vi chinh nhan lai het
+        totalRefundToWallet += tx.amount
 
       } else if (tx.type === 'income') {
         // Hoan nguoc dung: neu co auto-allocation thi rut tung hu theo ti le

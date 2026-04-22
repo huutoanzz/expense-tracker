@@ -46,6 +46,7 @@
           <div class="amount-display-wrap">
             <input
               class="amount-input"
+              :class="{ 'input-error': form.amount >= currentMax }"
               type="text"
               inputmode="numeric"
               :value="displayAmount"
@@ -56,7 +57,10 @@
           </div>
         </el-form-item>
 
-        <div v-if="form.amount >= 50000000" class="amount-warning">
+        <div v-if="form.amount >= currentMax" class="amount-warning amount-warning-limit">
+           Đã đạt giới hạn tối đa {{ currentMax.toLocaleString('vi-VN') }} đ
+        </div>
+        <div v-else-if="form.amount >= 100000000" class="amount-warning">
           ⚠️ Số tiền lớn — vui lòng kiểm tra lại
         </div>
 
@@ -266,6 +270,12 @@ import { ElNotification } from 'element-plus'
 import { useExpenseStore, CATEGORIES } from '../stores/expenseStore'
 
 const store = useExpenseStore()
+
+// ── Giới hạn số tiền tối đa ──────────────────────────────
+const MAX_INCOME  = 500_000_000   // Thu nhập: tối đa 500 triệu
+const MAX_EXPENSE = 500_000_000   // Chi tiêu: tối đa 500 triệu (có thể điều chỉnh)
+const MAX_AMOUNT  = MAX_INCOME    // Dùng chung cho input clamp (sẽ tính dynamic)
+
 const visible = ref(false)
 const submitting = ref(false)
 const formRef = ref(null)
@@ -291,8 +301,15 @@ const rules = {
     { required: true, message: 'Vui lòng nhập số tiền', trigger: 'blur' },
     {
       validator: (_, value, cb) => {
-        if (!value || value <= 0) cb(new Error('Số tiền phải lớn hơn 0'))
-        else cb()
+        if (!value || value <= 0) {
+          cb(new Error('Số tiền phải lớn hơn 0'))
+        } else if (form.type === 'income' && value > MAX_INCOME) {
+          cb(new Error(`Thu nhập tối đa ${MAX_INCOME.toLocaleString('vi-VN')} đ`))
+        } else if (form.type === 'expense' && value > MAX_EXPENSE) {
+          cb(new Error(`Chi tiêu tối đa ${MAX_EXPENSE.toLocaleString('vi-VN')} đ`))
+        } else {
+          cb()
+        }
       },
       trigger: 'blur',
     },
@@ -316,10 +333,26 @@ const displayAmount = computed(() =>
   form.amount ? form.amount.toLocaleString('vi-VN') : ''
 )
 
+// Giới hạn động theo loại giao dịch
+const currentMax = computed(() =>
+  form.type === 'income' ? MAX_INCOME : MAX_EXPENSE
+)
+
 function onAmountInput(e) {
   const raw = e.target.value.replace(/[^\d]/g, '')
-  const num = parseInt(raw, 10)
-  form.amount = isNaN(num) ? null : num
+  let num = parseInt(raw, 10)
+
+  if (isNaN(num)) {
+    form.amount = null
+    return
+  }
+
+  // Clamp về max
+  if (num > currentMax.value) {
+    num = currentMax.value
+  }
+
+  form.amount = num
 }
 
 function setAmount(val) {
@@ -547,6 +580,10 @@ async function doSaveTransaction() {
   background: rgba(245,158,11,0.1); border-radius: 8px;
   padding: 6px 12px; display: inline-block;
 }
+.amount-warning-limit {
+  color: #ef4444 !important;
+  background: rgba(239,68,68,0.1) !important;
+}
 
 /* ── Quick chips ── */
 .quick-chips {
@@ -695,4 +732,17 @@ async function doSaveTransaction() {
 .dialog-footer .el-button { min-width: 110px; }
 .text-red { color: #ef4444; }
 .warn-text { font-size: 13px; font-weight: 600; text-align: center; }
+
+.input-error {
+  color: #ef4444;
+  animation: shake 0.25s;
+}
+
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  50% { transform: translateX(4px); }
+  75% { transform: translateX(-3px); }
+  100% { transform: translateX(0); }
+}
 </style>
