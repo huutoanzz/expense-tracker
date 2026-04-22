@@ -323,7 +323,7 @@ async function handleDeleteJar(id) {
         <p style="color:#ef4444;font-weight:700;font-size:13px">⛔ Cảnh báo không thể khôi phục</p>
         <p style="color:#ef4444;font-size:13px;margin-top:4px">
           Hũ này có <b>${relatedTxCount} giao dịch</b> liên quan.<br>
-          Sau khi xóa hũ, <b>tất cả giao dịch của hũ sẽ không thể xóa hoặc chỉnh sửa</b> — chúng sẽ bị khoá vĩnh viễn.
+          Sau khi xóa hũ, <b>các giao dịch nội bộ của hũ sẽ không thể xóa hoặc chỉnh sửa</b> — chúng sẽ bị khoá vĩnh viễn.
         </p>
        </div>`
     : `<div style="margin-top:12px;padding:10px 14px;background:rgba(245,158,11,0.08);border-radius:10px;">
