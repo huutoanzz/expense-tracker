@@ -2,8 +2,8 @@
 
 /* ── Design Tokens ──────────────────────────────────────── */
 :root {
-  --accent: #6366f1;
-  --accent-2: #3b82f6;
+  --accent: #2FA4A8;
+  --accent-2: #4DB6B8;
   --success: #10b981;
   --danger: #ef4444;
   --warning: #f59e0b;
@@ -30,21 +30,21 @@ body.theme-black {
 }
 
 body.theme-blue {
-  --bg-main: #0d2b4e;
-  --sidebar-bg: #0f3460;
-  --card-bg: #123a6e;
-  --card-border: rgba(100, 180, 255, 0.15);
-  --text-primary: #e8f4fd;
-  --text-secondary: #64b4d8;
-  --el-dialog-bg-color: #123a6e;
-  --el-messagebox-bg-color: #123a6e;
-  --el-notification-bg-color: #123a6e;
-  --el-select-dropdown-bg-color: #123a6e;
-  --el-input-bg-color: #0d2b4e;
-  --el-input-text-color: #e8f4fd;
-  --el-bg-color: #123a6e;
-  --el-text-color-primary: #e8f4fd;
-  --el-text-color-regular: #64b4d8;
+  --bg-main: #c7dcf3;         
+  --sidebar-bg: #b2d2ee;       
+  --card-bg: #f2f8fe;
+  --card-border: rgba(70, 130, 200, 0.6);
+  --text-primary: #0e1a24;
+  --text-secondary: #3b6ea8;   
+  --el-dialog-bg-color: #f2f8fe;
+  --el-messagebox-bg-color: #f2f8fe;
+  --el-notification-bg-color: #f2f8fe;
+  --el-select-dropdown-bg-color: #f2f8fe;
+  --el-input-bg-color: #d6e9fb;
+  --el-input-text-color: #0e1a24;
+  --el-bg-color: #f2f8fe;
+  --el-text-color-primary: #0e1a24;
+  --el-text-color-regular: #3b6ea8;
   background-color: var(--bg-main);
   color: var(--text-primary);
 }
@@ -101,7 +101,7 @@ body {
   --el-table-border-color: var(--card-border) !important;
   --el-table-text-color: var(--text-primary) !important;
   --el-table-header-text-color: var(--text-secondary) !important;
-  --el-table-row-hover-bg-color: rgba(99, 102, 241, 0.06) !important;
+  --el-table-row-hover-bg-color: rgba(47, 164, 168, 0.08) !important;
   --el-table-stripe-color: rgba(255, 255, 255, 0.02) !important;
   background: transparent !important;
   font-size: 14px;
@@ -175,7 +175,7 @@ body {
 .el-select__wrapper.is-focused,
 .el-input-number.is-focus {
   border-color: var(--accent) !important;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
+  box-shadow: 0 0 0 3px rgba(47, 164, 168, 0.18) !important;
   background-color: var(--el-input-bg-color) !important;
 }
 
@@ -232,7 +232,7 @@ input:-webkit-autofill:active {
 
 .el-select-dropdown__item.is-hovering,
 .el-select-dropdown__item:hover {
-  background: rgba(99, 102, 241, 0.12) !important;
+  background: rgba(47, 164, 168, 0.12) !important;
 }
 
 .el-select-dropdown__item.is-selected {
