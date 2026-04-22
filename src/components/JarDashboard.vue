@@ -258,6 +258,9 @@ const limitPresets = [
   { label: '5M',  value: 5_000_000  },
   { label: '10M', value: 10_000_000 },
   { label: '20M', value: 20_000_000 },
+  { label: '50M', value: 50_000_000 },
+  { label: '100M', value: 100_000_000 },
+  { label: '200M', value: 200_000_000 },
   { label: '500M',value: 500_000_000 }
 ]
 
