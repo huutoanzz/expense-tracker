@@ -2,115 +2,127 @@
   <el-dialog
     :model-value="modelValue"
     @update:model-value="$emit('update:modelValue', $event)"
-    title="⚙️ Phân bổ thu nhập tự động"
-    width="700px"
+    width="min(700px, 96vw)"
     destroy-on-close
     append-to-body
     class="allocation-dialog"
     :close-on-click-modal="false"
+    :show-close="false"
   >
+    <template #header>
+      <div class="ad-header">
+        <div class="ad-header-left">
+          <div class="ad-header-icon">⚙️</div>
+          <div>
+            <div class="ad-title">Phân bổ tự động</div>
+            <div class="ad-subtitle">Tự động chia thu nhập vào các hũ</div>
+          </div>
+        </div>
+        <button class="ad-close" @click="$emit('update:modelValue', false)">✕</button>
+      </div>
+    </template>
+
     <div class="alloc-body">
 
-      <!-- Toggle + warning -->
-      <div class="alloc-header-card">
+      <!-- Toggle card -->
+      <div class="alloc-header-card" :class="{ 'is-over': isOverLimit }">
         <div class="alloc-toggle-row">
           <div class="alloc-toggle-info">
-            <span class="alloc-toggle-title">Kích hoạt phân bổ tự động</span>
+            <span class="alloc-toggle-title">Kích hoạt phân bổ</span>
             <span class="alloc-toggle-desc">
-              Khi có thu nhập mới, tiền sẽ tự chia vào các hũ theo tỷ lệ bên dưới.
+              Khi có thu nhập, tiền tự chia vào các hũ theo tỷ lệ bên dưới.
             </span>
           </div>
           <el-switch v-model="localEnabled" :disabled="isOverLimit" active-color="#6366f1" />
         </div>
         <div v-if="isOverLimit" class="alloc-warn-banner">
           <el-icon><WarningFilled /></el-icon>
-          Tổng phân bổ vượt 100% — tính năng đã tắt tự động. Vui lòng điều chỉnh trước khi bật lại.
+          <span>Tổng vượt 100% — tính năng đã tắt. Điều chỉnh trước khi bật lại.</span>
         </div>
       </div>
 
-      <!-- Mode toggle + total bar inline -->
-      <div class="mode-toggle-row">
-        <span class="section-label">Chế độ</span>
-        <div class="mode-pill-group">
-          <button class="mode-pill" :class="{ active: localMode === 'percent' }" @click="localMode = 'percent'">
-            <span class="pill-icon">%</span> Theo phần trăm
-          </button>
-          <!-- <button class="mode-pill" :class="{ active: localMode === 'fixed' }" @click="localMode = 'fixed'">
-            <span class="pill-icon">₫</span> Số tiền cố định
-          </button> -->
-        </div>
-
-        <div class="spacer" />
-
-        <div v-if="localMode === 'percent'" class="total-inline" :class="{ over: isOverLimit, perfect: totalPercent === 100 }">
-          <div class="total-bar-mini">
-            <div
-              class="total-bar-mini-fill"
-              :style="{
-                width: Math.min(totalPercent, 100) + '%',
-                background: isOverLimit ? '#ef4444' : totalPercent === 100 ? '#22c55e' : '#6366f1'
-              }"
-            />
-          </div>
-          <span class="total-label">
-            <template v-if="isOverLimit">⚠️ {{ totalPercent }}% (vượt {{ totalPercent - 100 }}%)</template>
-            <template v-else-if="totalPercent === 100"> {{ totalPercent }}% — Hoàn hảo</template>
-            <template v-else>{{ totalPercent }}% phân bổ · còn {{ 100 - totalPercent }}% vào ví</template>
+      <!-- Total progress bar + reset -->
+      <div class="total-summary" :class="{ over: isOverLimit, perfect: totalPercent === 100 }">
+        <div class="total-summary-top">
+          <span class="total-summary-label">
+            <template v-if="isOverLimit">⚠️ Vượt {{ totalPercent - 100 }}%</template>
+            <template v-else-if="totalPercent === 100">✅ Đã phân bổ đủ 100%</template>
+            <template v-else>{{ totalPercent }}% · còn {{ 100 - totalPercent }}% vào ví</template>
           </span>
+          <el-button size="small" text type="danger" @click="resetAll" class="reset-btn">
+            Xóa tất cả
+          </el-button>
         </div>
-
-        <el-button size="small" text type="danger" @click="resetAll">Xóa tất cả</el-button>
+        <div class="total-bar-track">
+          <div
+            class="total-bar-fill"
+            :style="{
+              width: Math.min(totalPercent, 100) + '%',
+              background: isOverLimit ? '#ef4444' : totalPercent === 100 ? '#22c55e' : '#6366f1'
+            }"
+          />
+        </div>
       </div>
 
-      <!-- Danh sách hũ — layout ngang -->
+      <!-- Jar rules — card per jar -->
       <div class="alloc-rules">
-        <div v-for="jar in store.jars" :key="jar.id" class="rule-row">
-          <!-- Jar info -->
-          <div class="rule-jar">
-            <div class="rule-icon" :style="{ background: jar.color + '22', color: jar.color }">
-              <el-icon><component :is="jar.icon" /></el-icon>
+        <div
+          v-for="jar in store.jars"
+          :key="jar.id"
+          class="rule-card"
+          :class="{ 'has-value': (localRules[jar.id] || 0) > 0 }"
+        >
+          <div class="rule-card-top">
+            <div class="rule-jar">
+              <div class="rule-icon" :style="{ background: jar.color + '22', color: jar.color }">
+                <el-icon><component :is="jar.icon" /></el-icon>
+              </div>
+              <div class="rule-name-wrap">
+                <span class="rule-name">{{ jar.name }}</span>
+                <span class="rule-sub">
+                  {{ jar.balance.toLocaleString('vi-VN') }} / {{ jar.limit.toLocaleString('vi-VN') }} đ
+                </span>
+              </div>
             </div>
-            <div class="rule-name-wrap">
-              <span class="rule-name">{{ jar.name }}</span>
-              <span class="rule-sub">{{ jar.balance.toLocaleString('vi-VN') }} / {{ jar.limit.toLocaleString('vi-VN') }} đ</span>
+
+            <div class="rule-right">
+              <div v-if="previewIncome > 0" class="rule-preview-amount">
+                ≈ {{ previewAmount(jar.id).toLocaleString('vi-VN') }} đ
+              </div>
+              <div class="custom-input-box" :class="{ focused: focusedId === jar.id }">
+                <input
+                  type="number"
+                  class="custom-input"
+                  inputmode="decimal"
+                  :min="0"
+                  :max="localMode === 'percent' ? 100 : undefined"
+                  :step="localMode === 'percent' ? 1 : 50000"
+                  :value="localRules[jar.id] || 0"
+                  @focus="focusedId = jar.id"
+                  @blur="focusedId = null"
+                  @input="onInput(jar.id, $event.target.value)"
+                />
+                <span class="input-unit">%</span>
+              </div>
             </div>
           </div>
 
-          <!-- Slider (mode % only) -->
+          <!-- Full-width slider with large thumb -->
           <div class="rule-slider-wrap">
             <input
-              v-if="localMode === 'percent'"
               type="range"
               class="rule-slider"
               min="0" max="100" step="1"
               :value="localRules[jar.id] || 0"
               @input="onSlider(jar.id, $event.target.value)"
             />
-            <div v-else class="rule-slider-placeholder" />
-          </div>
-
-          <!-- Custom input -->
-          <div class="rule-input-wrap">
-            <div class="custom-input-box" :class="{ focused: focusedId === jar.id }">
-              <input
-                type="number"
-                class="custom-input"
-                :min="0"
-                :max="localMode === 'percent' ? 100 : undefined"
-                :step="localMode === 'percent' ? 1 : 50000"
-                :value="localRules[jar.id] || 0"
-                @focus="focusedId = jar.id"
-                @blur="focusedId = null"
-                @input="onInput(jar.id, $event.target.value)"
-              />
-              <span class="input-unit">{{ localMode === 'percent' ? '%' : 'đ' }}</span>
+            <div class="slider-labels">
+              <span>0%</span>
+              <span class="slider-current" :style="{ color: jar.color }">
+                {{ localRules[jar.id] || 0 }}%
+              </span>
+              <span>100%</span>
             </div>
-          </div>
-
-          <!-- Preview amount -->
-          <div class="rule-preview" :class="{ visible: previewIncome > 0 }">
-            <span v-if="previewIncome > 0">≈ {{ previewAmount(jar.id).toLocaleString('vi-VN') }} đ</span>
-            <span v-else class="preview-dash">—</span>
           </div>
         </div>
       </div>
@@ -118,11 +130,12 @@
       <!-- Preview section -->
       <div class="preview-card" :class="{ over: isOverLimit }">
         <div class="preview-header">
-          <span class="section-label" style="margin:0">Thử với thu nhập</span>
+          <span class="section-label">Thử với thu nhập</span>
           <div class="custom-input-box preview-income-input" :class="{ focused: focusedId === 'preview' }">
             <input
               type="number"
               class="custom-input"
+              inputmode="numeric"
               min="0"
               :step="500000"
               :value="previewIncome || ''"
@@ -135,18 +148,26 @@
           </div>
         </div>
 
-        <div v-if="previewIncome > 0" class="preview-grid">
-          <div v-for="jar in store.jars" :key="jar.id" class="preview-item">
-            <div class="preview-jar-icon" :style="{ background: jar.color + '22', color: jar.color }">
-              <el-icon><component :is="jar.icon" /></el-icon>
+        <div v-if="previewIncome > 0" class="preview-list">
+          <div v-for="jar in store.jars" :key="jar.id" class="preview-row-item">
+            <div class="preview-row-left">
+              <div class="preview-jar-icon" :style="{ background: jar.color + '22', color: jar.color }">
+                <el-icon><component :is="jar.icon" /></el-icon>
+              </div>
+              <span class="preview-jar-name">{{ jar.name }}</span>
             </div>
-            <span class="preview-jar-name">{{ jar.name }}</span>
-            <span class="preview-jar-amount">+{{ previewAmount(jar.id).toLocaleString('vi-VN') }} đ</span>
+            <span class="preview-jar-amount">
+              +{{ previewAmount(jar.id).toLocaleString('vi-VN') }} đ
+            </span>
           </div>
-          <div class="preview-item wallet-item">
-            <div class="preview-jar-icon" style="background:rgba(99,102,241,0.1);font-size:15px">💼</div>
-            <span class="preview-jar-name">Ví chính (còn lại)</span>
-            <span class="preview-jar-amount green">+{{ previewWallet.toLocaleString('vi-VN') }} đ</span>
+          <div class="preview-row-item wallet-row">
+            <div class="preview-row-left">
+              <div class="preview-jar-icon wallet-icon">💼</div>
+              <span class="preview-jar-name">Ví chính (còn lại)</span>
+            </div>
+            <span class="preview-jar-amount green">
+              +{{ previewWallet.toLocaleString('vi-VN') }} đ
+            </span>
           </div>
         </div>
         <div v-else class="preview-placeholder">
@@ -158,8 +179,10 @@
 
     <template #footer>
       <div class="alloc-footer">
-        <el-button @click="$emit('update:modelValue', false)">Huỷ</el-button>
-        <el-button type="primary" :disabled="isOverLimit" @click="save">Lưu cài đặt</el-button>
+        <el-button @click="$emit('update:modelValue', false)" class="cancel-btn">Huỷ</el-button>
+        <el-button type="primary" :disabled="isOverLimit" @click="save" class="save-btn">
+          Lưu cài đặt
+        </el-button>
       </div>
     </template>
   </el-dialog>
@@ -240,121 +263,120 @@ function save() {
 </script>
 
 <style scoped>
+/* ── Dialog ── */
+:deep(.allocation-dialog) {
+  background: var(--sidebar-bg) !important;
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  margin: 8px auto !important;
+}
+:deep(.allocation-dialog .el-dialog__header) { padding: 0 !important; margin: 0 !important; }
+:deep(.allocation-dialog .el-dialog__body)   { padding: 0 !important; }
+:deep(.allocation-dialog .el-dialog__footer) { padding: 0 16px 16px !important; }
+
+/* ── Header ── */
+.ad-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--card-border);
+}
+.ad-header-left { display: flex; align-items: center; gap: 12px; }
+.ad-header-icon { font-size: 22px; line-height: 1; }
+.ad-title   { font-size: 16px; font-weight: 800; color: var(--text-primary); }
+.ad-subtitle { font-size: 12px; color: var(--text-secondary); margin-top: 1px; }
+.ad-close {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: none; background: var(--bg-main); color: var(--text-secondary);
+  font-size: 13px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; flex-shrink: 0;
+}
+.ad-close:hover { background: rgba(239,68,68,0.1); color: #ef4444; }
+
+/* ── Body ── */
 .alloc-body {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  max-height: 72vh;
-  overflow-y: auto;
-  padding-right: 2px;
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 16px;
+  max-height: 72vh; overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Header */
+/* ── Toggle ── */
 .alloc-header-card {
-  background: rgba(99, 102, 241, 0.05);
-  border: 1px solid rgba(99, 102, 241, 0.15);
-  border-radius: 14px;
-  padding: 16px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  background: rgba(99,102,241,0.05);
+  border: 1px solid rgba(99,102,241,0.15);
+  border-radius: 14px; padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 10px;
+  transition: border-color 0.2s;
+}
+.alloc-header-card.is-over {
+  background: rgba(239,68,68,0.04);
+  border-color: rgba(239,68,68,0.2);
 }
 .alloc-toggle-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
 .alloc-toggle-info { display: flex; flex-direction: column; gap: 3px; }
-.alloc-toggle-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
-.alloc-toggle-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+.alloc-toggle-title { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.alloc-toggle-desc  { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
 .alloc-warn-banner {
   display: flex; align-items: flex-start; gap: 8px;
   background: rgba(239,68,68,0.1); color: #ef4444;
   font-size: 12px; font-weight: 600;
-  padding: 10px 14px; border-radius: 10px; line-height: 1.5;
+  padding: 10px 12px; border-radius: 10px; line-height: 1.5;
 }
 
-/* Mode row */
-.mode-toggle-row {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-}
-.section-label {
-  font-size: 11px; font-weight: 700; color: var(--text-secondary);
-  text-transform: uppercase; letter-spacing: 0.6px; white-space: nowrap;
-}
-.mode-pill-group {
-  display: flex; background: var(--bg-main);
-  border: 1px solid var(--card-border); border-radius: 10px; padding: 3px; gap: 3px;
-}
-.mode-pill {
-  display: flex; align-items: center; gap: 6px;
-  padding: 7px 16px; border-radius: 8px; border: none;
-  background: transparent; color: var(--text-secondary);
-  font-size: 13px; font-weight: 600; cursor: pointer;
-  transition: all 0.2s ease; font-family: inherit;
-}
-.mode-pill:hover { color: var(--text-primary); background: rgba(99,102,241,0.06); }
-.mode-pill.active { background: #6366f1; color: #fff; box-shadow: 0 2px 8px rgba(99,102,241,0.35); }
-.pill-icon { font-size: 12px; font-weight: 800; }
-.spacer { flex: 1; }
-
-/* Total inline */
-.total-inline { display: flex; flex-direction: column; gap: 4px; min-width: 200px; }
-.total-bar-mini { height: 5px; background: var(--card-border); border-radius: 99px; overflow: hidden; }
-.total-bar-mini-fill { height: 100%; border-radius: 99px; transition: width 0.25s, background 0.25s; }
-.total-label { font-size: 11px; font-weight: 600; color: var(--text-secondary); }
-.total-inline.over .total-label { color: #ef4444; }
-.total-inline.perfect .total-label { color: #22c55e; }
-
-/* Rules */
-.alloc-rules { display: flex; flex-direction: column; gap: 7px; }
-
-.rule-row {
-  display: grid;
-  grid-template-columns: 190px 1fr 130px 100px;
-  align-items: center;
-  gap: 12px;
-  background: var(--bg-main);
-  border: 1px solid var(--card-border);
-  border-radius: 12px;
-  padding: 10px 14px;
+/* ── Total bar ── */
+.total-summary {
+  background: var(--bg-main); border: 1px solid var(--card-border);
+  border-radius: 12px; padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 8px;
   transition: border-color 0.2s;
 }
-.rule-row:hover { border-color: rgba(99,102,241,0.3); }
+.total-summary.over    { border-color: rgba(239,68,68,0.3); }
+.total-summary.perfect { border-color: rgba(34,197,94,0.3); }
+.total-summary-top { display: flex; justify-content: space-between; align-items: center; }
+.total-summary-label { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+.total-summary.over    .total-summary-label { color: #ef4444; }
+.total-summary.perfect .total-summary-label { color: #22c55e; }
+.reset-btn { font-size: 12px !important; padding: 4px 8px !important; }
+.total-bar-track { height: 6px; background: var(--card-border); border-radius: 99px; overflow: hidden; }
+.total-bar-fill  { height: 100%; border-radius: 99px; transition: width 0.25s, background 0.25s; }
 
-.rule-jar { display: flex; align-items: center; gap: 10px; min-width: 0; }
+/* ── Rule cards ── */
+.alloc-rules { display: flex; flex-direction: column; gap: 10px; }
+
+.rule-card {
+  background: var(--bg-main); border: 1.5px solid var(--card-border);
+  border-radius: 14px; padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 10px;
+  transition: border-color 0.2s;
+}
+.rule-card.has-value { border-color: rgba(99,102,241,0.25); }
+
+.rule-card-top {
+  display: flex; align-items: center;
+  justify-content: space-between; gap: 12px;
+}
+.rule-jar { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
 .rule-icon {
-  width: 32px; height: 32px; border-radius: 9px;
+  width: 34px; height: 34px; border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 14px; flex-shrink: 0;
+  font-size: 15px; flex-shrink: 0;
 }
-.rule-name-wrap { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.rule-name { font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rule-sub { font-size: 11px; color: var(--text-secondary); }
+.rule-name-wrap { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rule-name { font-size: 13px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rule-sub  { font-size: 11px; color: var(--text-secondary); }
 
-/* Slider */
-.rule-slider-wrap { display: flex; align-items: center; }
-.rule-slider-placeholder { height: 5px; width: 100%; }
-.rule-slider {
-  width: 100%; height: 5px; border-radius: 99px;
-  appearance: none; background: var(--card-border);
-  outline: none; cursor: pointer; accent-color: #6366f1;
-}
-.rule-slider::-webkit-slider-thumb {
-  appearance: none; width: 16px; height: 16px; border-radius: 50%;
-  background: #6366f1; cursor: pointer;
-  box-shadow: 0 2px 6px rgba(99,102,241,0.4);
-  transition: transform 0.15s;
-}
-.rule-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
+.rule-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.rule-preview-amount { font-size: 11px; font-weight: 600; color: #6366f1; white-space: nowrap; }
 
-/* Custom input */
-.rule-input-wrap { display: flex; justify-content: flex-end; }
+/* ── Input box ── */
 .custom-input-box {
   display: flex; align-items: center;
-  background: var(--card-bg);
-  border: 1.5px solid var(--card-border);
-  border-radius: 10px;
-  padding: 0 10px 0 10px;
-  height: 36px; gap: 5px;
+  background: var(--card-bg); border: 1.5px solid var(--card-border);
+  border-radius: 10px; padding: 0 10px;
+  height: 40px; gap: 5px;
   transition: border-color 0.2s, box-shadow 0.2s;
-  width: 120px;
+  width: 88px;
 }
 .custom-input-box.focused {
   border-color: #6366f1;
@@ -362,7 +384,7 @@ function save() {
 }
 .custom-input {
   flex: 1; border: none; background: transparent;
-  color: var(--text-primary); font-size: 14px; font-weight: 700;
+  color: var(--text-primary); font-size: 15px; font-weight: 700;
   font-family: inherit; outline: none;
   width: 0; min-width: 0; text-align: right;
 }
@@ -370,41 +392,75 @@ function save() {
 .custom-input::-webkit-inner-spin-button { -webkit-appearance: none; }
 .input-unit { font-size: 13px; font-weight: 700; color: #6366f1; flex-shrink: 0; }
 
-/* Per-row preview */
-.rule-preview { text-align: right; font-size: 12px; font-weight: 600; color: transparent; transition: color 0.2s; }
-.rule-preview.visible { color: #6366f1; }
-.preview-dash { color: var(--card-border); }
+/* ── Slider ── */
+.rule-slider-wrap { display: flex; flex-direction: column; gap: 4px; }
 
-/* Preview card */
+.rule-slider {
+  width: 100%; height: 6px; border-radius: 99px;
+  appearance: none; background: var(--card-border);
+  outline: none; cursor: pointer; accent-color: #6366f1;
+  /* Increase tap area on mobile */
+  padding: 8px 0; box-sizing: content-box;
+}
+.rule-slider::-webkit-slider-thumb {
+  appearance: none; width: 22px; height: 22px; border-radius: 50%;
+  background: #6366f1; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.45);
+  border: 2px solid #fff; transition: transform 0.15s;
+}
+.rule-slider::-webkit-slider-thumb:hover,
+.rule-slider::-webkit-slider-thumb:active { transform: scale(1.18); }
+.rule-slider::-moz-range-thumb {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #6366f1; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.45);
+  border: 2px solid #fff;
+}
+
+.slider-labels {
+  display: flex; justify-content: space-between;
+  font-size: 10px; color: var(--text-secondary); padding: 0 2px;
+}
+.slider-current { font-weight: 700; font-size: 11px; }
+
+/* ── Preview card ── */
 .preview-card {
-  background: var(--bg-main);
-  border: 1px solid var(--card-border);
-  border-radius: 14px;
-  padding: 14px 16px;
-  display: flex; flex-direction: column; gap: 14px;
+  background: var(--bg-main); border: 1px solid var(--card-border);
+  border-radius: 14px; padding: 14px;
+  display: flex; flex-direction: column; gap: 12px;
   transition: border-color 0.2s;
 }
-.preview-card.over { border-color: rgba(239,68,68,0.35); }
-.preview-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.preview-income-input { width: 180px; }
+.preview-card.over { border-color: rgba(239,68,68,0.3); }
 
-.preview-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 8px;
+.preview-header {
+  display: flex; align-items: center;
+  justify-content: space-between; gap: 12px; flex-wrap: wrap;
 }
-.preview-item {
-  display: flex; flex-direction: column; gap: 5px;
+.section-label {
+  font-size: 11px; font-weight: 700; color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: 0.6px;
+}
+.preview-income-input { width: 160px; }
+
+.preview-list { display: flex; flex-direction: column; gap: 7px; }
+
+.preview-row-item {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
   background: var(--card-bg); border: 1px solid var(--card-border);
-  border-radius: 10px; padding: 10px 12px;
+  border-radius: 10px;
 }
-.wallet-item { border-style: dashed; }
+.wallet-row { border-style: dashed; }
+.preview-row-left { display: flex; align-items: center; gap: 9px; }
 .preview-jar-icon {
   width: 28px; height: 28px; border-radius: 8px;
-  display: flex; align-items: center; justify-content: center; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; flex-shrink: 0;
 }
-.preview-jar-name { font-size: 11px; color: var(--text-secondary); font-weight: 500; }
-.preview-jar-amount { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+.wallet-icon { background: rgba(99,102,241,0.1); }
+.preview-jar-name   { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.preview-jar-amount { font-size: 13px; font-weight: 700; color: var(--text-primary); white-space: nowrap; }
 .green { color: #22c55e !important; }
 
 .preview-placeholder {
@@ -412,11 +468,24 @@ function save() {
   text-align: center; padding: 10px 0; opacity: 0.6;
 }
 
-/* Footer */
+/* ── Footer ── */
 .alloc-footer { display: flex; justify-content: flex-end; gap: 10px; }
+.cancel-btn { min-width: 80px; }
+.save-btn   { min-width: 120px; }
 
-:deep(.allocation-dialog) {
-  background: var(--sidebar-bg) !important;
-  border-radius: 20px !important;
+/* ── Mobile ── */
+@media (max-width: 600px) {
+  .alloc-body  { padding: 12px; gap: 12px; max-height: 78vh; }
+  .ad-header   { padding: 14px 14px 12px; }
+  .ad-title    { font-size: 15px; }
+
+  .alloc-footer { flex-direction: column-reverse; gap: 8px; }
+  .cancel-btn, .save-btn { width: 100% !important; height: 48px; font-size: 15px; }
+
+  .preview-income-input { width: 100% !important; }
+  .preview-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+
+  .custom-input-box { width: 80px; height: 44px; }
+  .custom-input     { font-size: 16px; }
 }
 </style>
