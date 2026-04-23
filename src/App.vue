@@ -1,7 +1,14 @@
 <template>
-  <div class="app-layout">
+  <div class="app-layout" @touchstart="onTouchStart" @touchend="onTouchEnd">
+    <!-- ── Mobile overlay backdrop ──────────────────── -->
+    <div
+      class="mobile-overlay"
+      :class="{ visible: mobileNavOpen }"
+      @click="mobileNavOpen = false"
+    />
+
     <!-- ── Sidebar ───────────────────────────────────── -->
-    <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
+    <aside class="sidebar" :class="{ collapsed: sidebarCollapsed, 'mobile-open': mobileNavOpen }">
       <div class="sidebar-logo">
         <el-icon :size="28" class="logo-icon"><Wallet /></el-icon>
         <span v-if="!sidebarCollapsed" class="logo-text">SmartExpense</span>
@@ -44,7 +51,7 @@
       <!-- Top Bar -->
       <header class="topbar">
         <div class="topbar-left">
-          <button class="mobile-menu-btn" @click="sidebarCollapsed = !sidebarCollapsed">
+          <button class="mobile-menu-btn" @click="mobileNavOpen = !mobileNavOpen">
             <el-icon :size="22"><Menu /></el-icon>
           </button>
           <div class="page-info">
@@ -263,6 +270,23 @@
       </section>
     </main>
 
+    <!-- ── Mobile Bottom Navigation ────────────────── -->
+    <nav class="mobile-bottom-nav">
+      <a
+        v-for="item in navItems"
+        :key="item.key"
+        class="bottom-nav-item"
+        :class="{ active: activeTab === item.key }"
+        @click="activeTab = item.key; mobileNavOpen = false"
+      >
+        <div class="bottom-nav-icon-wrap">
+          <el-icon :size="20"><component :is="item.icon" /></el-icon>
+          <span v-if="item.badge" class="bottom-nav-badge">{{ item.badge > 99 ? '99+' : item.badge }}</span>
+        </div>
+        <span class="bottom-nav-label">{{ item.label }}</span>
+      </a>
+    </nav>
+
     <!-- ── Settings Dialog ───────────────────────────── -->
     <el-dialog
       v-model="settingsVisible"
@@ -360,6 +384,30 @@ function handleSelectionChange(val) {
 // ── Sidebar ───────────────────────────────────────────────
 const sidebarCollapsed = ref(false)
 const activeTab = ref('dashboard')
+const mobileNavOpen = ref(false)
+
+// ── Swipe gesture to open/close sidebar on mobile ─────────
+let touchStartX = 0
+let touchStartY = 0
+
+function onTouchStart(e) {
+  touchStartX = e.touches[0].clientX
+  touchStartY = e.touches[0].clientY
+}
+
+function onTouchEnd(e) {
+  const dx = e.changedTouches[0].clientX - touchStartX
+  const dy = e.changedTouches[0].clientY - touchStartY
+  // Only horizontal swipe (more x than y movement)
+  if (Math.abs(dx) < Math.abs(dy) * 1.5) return
+  if (dx > 60 && touchStartX < 40) mobileNavOpen.value = true   // swipe right from edge
+  if (dx < -60 && mobileNavOpen.value) mobileNavOpen.value = false // swipe left to close
+}
+
+// Close sidebar when tab changes on mobile
+watch(activeTab, () => {
+  if (window.innerWidth <= 768) mobileNavOpen.value = false
+})
 
 const navItems = computed(() => [
   {
@@ -389,7 +437,7 @@ const pageMap = {
   dashboard: { title: 'Dashboard', subtitle: 'Tổng quan tài chính của bạn' },
   jars: { title: 'Hũ Chi Tiêu', subtitle: 'Quản lý ngân sách thông minh' },
   transactions: { title: 'Giao Dịch', subtitle: 'Quản lý thu chi chi tiết' },
-  profile: { title: 'Thông Tin Cá Nhân', subtitle: 'Quản lý tài khoản của bạn' },
+  profile: { title: 'Profile', subtitle: 'Quản lý tài khoản của bạn' },
 }
 const currentPage = computed(() => pageMap[activeTab.value])
 
@@ -937,30 +985,214 @@ async function handleResetDefault() {
 }
 
 /* ── Responsive ──────────────────────────────────────────── */
+/* ── Mobile overlay ──────────────────────────────────────── */
+.mobile-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(2px);
+  z-index: 99;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+.mobile-overlay.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* ── Bottom nav (hidden on desktop) ─────────────────────── */
+.mobile-bottom-nav { display: none; }
+
+/* ── Mobile breakpoint ───────────────────────────────────── */
 @media (max-width: 768px) {
+  /* Overlay visible on mobile */
+  .mobile-overlay { display: block; }
+
+  /* Sidebar: hidden by default, slides in from left */
   .sidebar {
     position: fixed;
     left: 0;
     top: 0;
     z-index: 100;
     height: 100vh;
+    width: 240px !important;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 4px 0 24px rgba(0,0,0,0.3);
+  }
+  .sidebar.mobile-open {
     transform: translateX(0);
   }
+  /* Hide collapse button on mobile — sidebar is full-width always */
   .sidebar.collapsed {
+    width: 240px !important;
     transform: translateX(-100%);
-    width: 240px;
   }
+  .sidebar.collapsed.mobile-open {
+    transform: translateX(0);
+  }
+  /* Always show nav labels on mobile sidebar */
+  .sidebar .nav-label { display: block !important; opacity: 1 !important; }
+  .sidebar .sidebar-logo .logo-text { display: block !important; opacity: 1 !important; }
+  .sidebar-footer .footer-actions { justify-content: flex-end; }
+  .footer-icon-btn:first-child { display: none; } /* hide collapse toggle on mobile */
+
+  /* Mobile menu button */
   .mobile-menu-btn {
     display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
   }
-  .tab-section {
-    padding: 16px;
+
+  /* Main layout — no sidebar space */
+  .main-content {
+    padding-bottom: 72px; /* room for bottom nav */
   }
+
+  /* Topbar */
   .topbar {
-    padding: 14px 16px;
+    padding: 12px 16px;
+    gap: 10px;
   }
-  .current-date {
-    display: none;
+  .topbar-right {
+    gap: 10px;
   }
+  .current-date { display: none; }
+  .page-title { font-size: 17px; }
+  .page-subtitle { display: none; }
+
+  /* Tab sections */
+  .tab-section { padding: 14px 12px; }
+
+  /* Filter bar — stack on mobile */
+  .filter-bar {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  .filter-bar .el-select {
+    width: 100% !important;
+  }
+  .search-input { width: 100% !important; }
+
+  /* Table — hide less important columns */
+  .el-table .el-table__cell:nth-child(1) { /* checkbox */
+    min-width: 40px;
+  }
+
+  /* Table footer */
+  .table-footer {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start !important;
+  }
+
+  /* ── Bottom Navigation Bar ── */
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 90;
+    background: var(--sidebar-bg);
+    border-top: 1px solid var(--card-border);
+    height: 64px;
+    padding: 0 4px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.12);
+  }
+
+  .bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    cursor: pointer;
+    padding: 6px 4px;
+    border-radius: 12px;
+    margin: 6px 2px;
+    transition: all 0.2s ease;
+    color: var(--text-secondary);
+    text-decoration: none;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .bottom-nav-item.active {
+    color: #6366f1;
+    background: rgba(99,102,241,0.1);
+  }
+
+  .bottom-nav-icon-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .bottom-nav-badge {
+    position: absolute;
+    top: -6px;
+    right: -8px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 99px;
+    min-width: 16px;
+    text-align: center;
+    line-height: 14px;
+  }
+
+  .bottom-nav-label {
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* Stat cards — full width on mobile */
+  .main-stats {
+    flex-direction: column;
+  }
+  .stat-card {
+    min-width: unset !important;
+    width: 100%;
+  }
+
+  /* Jar grid — single column */
+  .jar-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Dialog width on mobile */
+  :deep(.el-dialog) {
+    width: 94vw !important;
+    margin: 0 auto !important;
+  }
+
+  /* Warning card compact */
+  .delete-warning-card {
+    padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+  .warning-text { font-size: 12.5px; }
+}
+
+/* ── Very small screens ──────────────────────────────────── */
+@media (max-width: 380px) {
+  .bottom-nav-label { display: none; }
+  .bottom-nav-item { justify-content: center; padding: 8px 4px; }
+  .topbar { padding: 10px 12px; }
 }
 </style>
