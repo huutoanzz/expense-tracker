@@ -3,7 +3,9 @@
     <div class="dashboard-header mb-6">
       <div class="main-stats">
         <div class="stat-card wallet-stat animate__animated animate__fadeInLeft">
-          <div class="stat-icon wallet-icon"><Wallet /></div>
+          <div class="stat-icon wallet-icon">
+            <el-icon :size="22"><Wallet /></el-icon>
+          </div>
           <div class="stat-info">
             <span class="stat-label">Ví chính</span>
             <span class="stat-value">{{ formatVND(store.walletBalance) }}</span>
@@ -11,7 +13,9 @@
           <div class="stat-glow" style="background:#10b981"></div>
         </div>
         <div class="stat-card jars-stat animate__animated animate__fadeInLeft" style="animation-delay:0.1s">
-          <div class="stat-icon jars-icon"><Money /></div>
+          <div class="stat-icon jars-icon">
+            <el-icon :size="22"><Money /></el-icon>
+          </div>
           <div class="stat-info">
             <span class="stat-label">Tổng trong hũ</span>
             <span class="stat-value">{{ formatVND(store.totalJarBalance) }}</span>
@@ -301,7 +305,7 @@ function handleEditJar(id) {
     name: jar.name,
     limit: jar.limit,
     categoryValue: jar.categoryValue,
-    color: jar.color,   // ← fix bug màu
+    color: jar.color,
     icon: jar.icon
   })
   jarDialogVisible.value = true
