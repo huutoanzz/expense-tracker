@@ -8,7 +8,7 @@
   <!-- ── Main Dialog ── -->
   <el-dialog
     v-model="visible"
-    width="460px"
+    width="min(460px, 96vw)"
     destroy-on-close
     class="expense-dialog"
     :close-on-click-modal="false"
@@ -170,7 +170,7 @@
   <el-dialog
     v-model="showInsufficientDialog"
     title="💸 Không đủ tiền trong hũ"
-    width="460px"
+    width="min(460px, 96vw)"
     append-to-body
     destroy-on-close
     class="insufficient-dialog"
@@ -745,4 +745,49 @@ async function doSaveTransaction() {
   75% { transform: translateX(-3px); }
   100% { transform: translateX(0); }
 }
+/* ── Mobile ──────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  /* Dialog fits screen */
+  :deep(.expense-dialog),
+  :deep(.insufficient-dialog) {
+    margin: 0 !important;
+    border-radius: 20px 20px 0 0 !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-height: 95dvh !important;
+  }
+  :deep(.expense-dialog .el-dialog__body),
+  :deep(.insufficient-dialog .el-dialog__body) {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Amount hero compact */
+  .amount-input { font-size: 36px !important; }
+  .amount-currency { font-size: 18px !important; }
+
+  /* Quick chips wrap tighter */
+  .quick-chips { gap: 6px; }
+  .chip { padding: 6px 11px; font-size: 12px; }
+
+  /* Category grid — 3 per row max */
+  .cat-grid { gap: 6px; }
+  .cat-chip { padding: 7px 9px; font-size: 11.5px; }
+
+  /* Submit button full height */
+  .submit-btn { height: 54px !important; font-size: 15px !important; }
+
+  /* Insufficient dialog options */
+  .option-card { padding: 12px 13px; }
+  .option-preview { padding: 8px 10px; }
+  .preview-row { font-size: 11px; }
+
+  /* Footer stacked */
+  .dialog-footer { flex-direction: column-reverse; gap: 8px; }
+  .dialog-footer .el-button { width: 100% !important; height: 48px; min-width: unset; }
+}
+
 </style>

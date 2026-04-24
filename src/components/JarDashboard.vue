@@ -202,11 +202,11 @@
 
       <template #footer>
         <div class="jd-footer">
-          <el-button class="jd-cancel-btn" @click="jarDialogVisible = false">Huỷ</el-button>
           <button class="jd-save-btn" @click="saveJar">
             <el-icon><Check /></el-icon>
             {{ editingJar ? 'Lưu thay đổi' : 'Tạo hũ' }}
           </button>
+          <button class="jd-cancel-btn" @click="jarDialogVisible = false">Huỷ</button>
         </div>
       </template>
     </el-dialog>
@@ -397,6 +397,8 @@ function saveJar() {
 
 <style scoped>
 /* ── Dashboard ── */
+
+
 .jar-dashboard { display: flex; flex-direction: column; }
 .dashboard-header {
   display: flex; justify-content: space-between;
@@ -609,21 +611,33 @@ function saveJar() {
 }
 
 /* ── Footer ── */
-.jd-footer { display: flex; gap: 10px; }
-.jd-cancel-btn {
-  flex: 0 0 auto; height: 48px; min-width: 90px;
-  border-radius: 12px !important; font-weight: 600 !important;
+.jd-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 .jd-save-btn {
-  flex: 1; height: 48px;
+  width: 100%; height: 52px;
   background: linear-gradient(135deg, #6366f1, #3b82f6);
   border: none; color: #fff;
-  border-radius: 12px; font-size: 15px; font-weight: 700;
+  border-radius: 14px; font-size: 15px; font-weight: 700;
   box-shadow: 0 6px 18px rgba(99,102,241,0.35);
   transition: all 0.25s ease;
   display: flex; align-items: center; justify-content: center; gap: 7px;
   cursor: pointer; font-family: inherit;
 }
-.jd-save-btn:hover { transform: translateY(-1px); filter: brightness(1.08); box-shadow: 0 8px 22px rgba(99,102,241,0.45); }
+.jd-save-btn:hover { transform: translateY(-1px); filter: brightness(1.08); }
 .jd-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.jd-cancel-btn {
+  width: 100%; height: 46px;
+  background: transparent;
+  border: 1.5px solid var(--card-border);
+  color: var(--text-secondary);
+  border-radius: 14px; font-size: 14px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+  transition: all 0.2s ease;
+  display: flex; align-items: center; justify-content: center;
+}
+.jd-cancel-btn:hover { border-color: var(--text-secondary); color: var(--text-primary); }
 </style>
