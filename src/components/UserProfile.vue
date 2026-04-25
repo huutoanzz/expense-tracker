@@ -313,8 +313,6 @@ async function handleSave() {
 /* ── Layout ──────────────────────────────────────────────── */
 .profile-container {
   padding: 28px;
-  max-width: 960px;
-  margin: 0 auto;
 }
 
 .profile-layout {

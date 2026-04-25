@@ -67,8 +67,7 @@
 
       <!-- ── Dashboard Tab ──────────────────────────── -->
       <section v-if="activeTab === 'dashboard'" class="tab-section animate__animated animate__fadeIn">
-        <ExpenseSummary />
-        <ExpenseChart />
+        <DashboardView />
       </section>
 
       <!-- ── Jars Tab ─────────────────────────────── -->
@@ -357,8 +356,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { vAutoAnimate } from '@formkit/auto-animate/vue'
 import { useExpenseStore, CATEGORIES } from './stores/expenseStore'
-import ExpenseSummary from './components/ExpenseSummary.vue'
-import ExpenseChart from './components/ExpenseChart.vue'
+import DashboardView from './components/DashboardView.vue'
 import ExpenseForm from './components/ExpenseForm.vue'
 import UserProfile from './components/UserProfile.vue'
 import JarDashboard from './components/JarDashboard.vue'

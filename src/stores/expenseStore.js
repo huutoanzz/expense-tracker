@@ -142,12 +142,6 @@ export const useExpenseStore = defineStore('expense', () => {
     const totalIn = transactions.value.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
     const totalOut = transactions.value.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
 
-    // For legacy data, we calculate what balance should be
-    // but the jars might already have balance from my previous implementation.
-    // Let's assume jars started with 0 and we only count expenses toward them.
-    // However, the user specifically said:
-    // "TOTAL ASSETS = WALLET + SUM(JARS) = INCOME - EXPENSE"
-
     const sumJars = jars.value.reduce((s, j) => s + j.balance, 0)
     let calcWallet = totalIn - totalOut - sumJars
 
@@ -161,7 +155,7 @@ export const useExpenseStore = defineStore('expense', () => {
         category: 'other',
         date: new Date().toISOString().split('T')[0],
         isSystem: true
-      }, true) // skip balance updates since this is the adjustment itself
+      }, true)
     }
 
     walletBalance.value = calcWallet
@@ -193,7 +187,7 @@ export const useExpenseStore = defineStore('expense', () => {
       })
     return Object.entries(map).map(([category, value]) => {
       const cat = CATEGORIES.find(c => c.value === category)
-      return { name: cat?.label ?? category, value, color: cat?.color ?? '#6b7280' }
+      return { name: cat?.label ?? category, value, color: cat?.color ?? '#6b7280', key: category }
     })
   })
 
@@ -217,12 +211,9 @@ export const useExpenseStore = defineStore('expense', () => {
         const jar = jars.value.find(j => j.categoryValue === newTx.category) || jars.value.find(j => j.categoryValue === 'other')
         if (jar && jar.balance > 0) {
           if (jar.balance >= newTx.amount) {
-            // Hu du tien: tru het tu hu
             jar.balance -= newTx.amount
-            // Ghi nguon tien chinh xac tai thoi diem chi
             newTx.sourceBreakdown = { jarId: jar.id, fromJar: newTx.amount, fromWallet: 0 }
           } else {
-            // Hu khong du: dung het hu, phan con lai tru vi
             const fromJar = jar.balance
             const fromWallet = newTx.amount - fromJar
             jar.balance = 0
@@ -230,7 +221,6 @@ export const useExpenseStore = defineStore('expense', () => {
             newTx.sourceBreakdown = { jarId: jar.id, fromJar, fromWallet }
           }
         } else {
-          // Khong co hu hoac hu trong: tru toan bo tu vi
           walletBalance.value -= newTx.amount
           newTx.sourceBreakdown = { jarId: null, fromJar: 0, fromWallet: newTx.amount }
         }
@@ -259,24 +249,18 @@ export const useExpenseStore = defineStore('expense', () => {
   }
 
   async function deleteTransaction(ids) {
-    // Hỗ trợ cả xóa 1 và xóa nhiều
     const idArray = Array.isArray(ids) ? ids : [ids]
     if (idArray.length === 0) return
 
     let totalRefundToWallet = 0
 
-    // ── Xử lý refund trước khi xóa ─────────────────────────────────
     for (const id of idArray) {
       const tx = transactions.value.find(t => t.id === id)
       if (!tx) continue
 
       if (tx.type === 'expense') {
-        // Luon hoan toan bo ve Vi chinh (khong hoan ve hu)
-        // Du tien goc tu hu hay vi, khi xoa -> vi chinh nhan lai het
         totalRefundToWallet += tx.amount
-
       } else if (tx.type === 'income') {
-        // Hoan nguoc dung: neu co auto-allocation thi rut tung hu theo ti le
         if (allocationSettings.value.enabled && !tx.skipAutoAllocation) {
           const rules = allocationSettings.value.rules || {}
           let allocatedTotal = 0
@@ -288,13 +272,11 @@ export const useExpenseStore = defineStore('expense', () => {
               allocatedTotal += share
             }
           })
-          // Phan con lai (da vao vi) thi hoan tu vi
           walletBalance.value -= (tx.amount - allocatedTotal)
         } else {
           walletBalance.value -= tx.amount
         }
       } else if (tx.type === 'internal') {
-        // Revert internal transfer
         if (tx.sourceType === 'MAIN' && tx.targetType === 'JAR') {
           walletBalance.value += tx.amount
           const jar = jars.value.find(j => j.id === tx.targetId)
@@ -307,23 +289,18 @@ export const useExpenseStore = defineStore('expense', () => {
       }
     }
 
-    // Áp dụng tổng refund một lần (rất nhanh khi xóa nhiều)
     if (totalRefundToWallet > 0) {
       walletBalance.value += totalRefundToWallet
     }
 
-    // ── Xóa giao dịch ─────────────────────────────────────────────
     await new Promise(resolve => setTimeout(resolve, idArray.length > 1 ? 600 : 400))
-
     transactions.value = transactions.value.filter(t => !idArray.includes(t.id))
 
-    // Lưu lại
     saveToStorage(transactions.value)
     saveJarsToStorage(jars.value)
     saveWalletToStorage(walletBalance.value)
   }
 
-  // ── Jar Actions ───────────────────────────────────────────
   function depositToJar(jarId, amount) {
     const jar = jars.value.find(j => j.id === jarId)
     if (jar && walletBalance.value >= amount) {
