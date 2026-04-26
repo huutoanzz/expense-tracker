@@ -67,7 +67,7 @@
 
       <!-- ── Dashboard Tab ──────────────────────────── -->
       <section v-if="activeTab === 'dashboard'" class="tab-section animate__animated animate__fadeIn">
-        <DashboardView />
+        <DashboardView @navigate="activeTab = $event" />
       </section>
 
       <!-- ── Jars Tab ─────────────────────────────── -->

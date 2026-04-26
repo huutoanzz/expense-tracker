@@ -202,6 +202,9 @@
     <!-- ── Recent Transactions ──────────────────────────────── -->
     <div class="section-header">
       <p class="section-title-text">🕐 Giao dịch gần đây</p>
+      <button class="see-all-btn" @click="emit('navigate', 'transactions')">
+        Xem tất cả <span class="see-all-arrow">→</span>
+      </button>
     </div>
     <div class="tx-list animate__animated animate__fadeIn" style="animation-delay:400ms">
       <div
@@ -540,11 +543,13 @@ const barOption = computed(() => ({
 }))
 
 // ── Recent transactions ──────────────────────────────────────
+const emit = defineEmits(['navigate'])
+
 const recentTransactions = computed(() =>
   [...store.transactions]
     .filter(t => t.type === 'income' || t.type === 'expense')
     .sort((a, b) => new Date(b.date) - new Date(a.date))
-    .slice(0, 10)
+    .slice(0, 4)
 )
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -792,6 +797,16 @@ body.theme-blue .insight-banner {
   display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
 }
 .section-title-text { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.see-all-btn {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 13px; font-weight: 600; color: var(--accent);
+  background: transparent; border: none; cursor: pointer;
+  font-family: inherit; padding: 4px 0;
+  transition: opacity 0.2s ease;
+}
+.see-all-btn:hover { opacity: 0.7; }
+.see-all-arrow { transition: transform 0.2s ease; display: inline-block; }
+.see-all-btn:hover .see-all-arrow { transform: translateX(4px); }
 
 /* ── Transactions ────────────────────────────────────────── */
 .tx-list {
