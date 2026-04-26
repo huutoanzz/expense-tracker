@@ -1051,7 +1051,7 @@ async function handleResetDefault() {
   font-weight: 700;
   color: var(--text-primary);
 }
-.mts-income  { color: #2D6A4F; }
+.mts-income  { color: #10b981; }
 .mts-expense { color: #ef4444; }
 
 .mobile-tx-list {
@@ -1111,7 +1111,7 @@ async function handleResetDefault() {
   white-space: nowrap;
   flex-shrink: 0;
 }
-.chip-income     { background: rgba(45,106,79,0.12);  color: #2D6A4F; }
+.chip-income     { background: rgba(16,185,129,0.12);  color: #10b981; }
 .chip-expense    { background: rgba(239,68,68,0.1);   color: #ef4444; }
 .chip-internal   { background: rgba(99,102,241,0.1);  color: #6366f1; }
 .chip-adjustment { background: rgba(245,158,11,0.12); color: #f59e0b; }

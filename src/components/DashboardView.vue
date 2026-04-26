@@ -32,7 +32,7 @@
 
       <!-- Thu Nhập -->
       <div class="summary-card income-card animate__animated animate__fadeInUp" style="animation-delay:0ms">
-        <div class="card-icon-wrap" style="background: rgba(45,106,79,0.12)">
+        <div class="card-icon-wrap" style="background: rgba(16,185,129,0.12)">
           <span class="card-emoji">💰</span>
         </div>
         <div class="card-body">
@@ -46,7 +46,7 @@
 
       <!-- Chi Tiêu -->
       <div class="summary-card expense-card animate__animated animate__fadeInUp" style="animation-delay:80ms">
-        <div class="card-icon-wrap" style="background: rgba(231,111,0,0.12)">
+        <div class="card-icon-wrap" style="background: rgba(239,68,68,0.12)">
           <span class="card-emoji">🧾</span>
         </div>
         <div class="card-body">
@@ -66,7 +66,7 @@
 
       <!-- Tiết Kiệm -->
       <div class="summary-card saving-card animate__animated animate__fadeInUp" style="animation-delay:160ms">
-        <div class="card-icon-wrap" style="background: rgba(45,106,79,0.12)">
+        <div class="card-icon-wrap" style="background: rgba(16,185,129,0.12)">
           <span class="card-emoji">🏦</span>
         </div>
         <div class="card-body">
@@ -479,12 +479,13 @@ const realMonthlyData = computed(() => {
 })
 
 const barOption = computed(() => ({
+  color: ['#10b981', '#ef4444'],
   backgroundColor: 'transparent',
   tooltip: {
     trigger: 'axis',
     axisPointer: { type: 'shadow' },
     formatter: params =>
-      params.map(p => `${p.seriesName}: <b>${formatVND(p.value)}</b>`).join('<br/>'),
+      params.map(p => `${p.marker} ${p.seriesName}: <b>${formatVND(p.value)}</b>`).join('<br/>'),
     backgroundColor: 'rgba(15,23,42,0.9)',
     borderColor: 'rgba(255,255,255,0.08)',
     textStyle: { color: '#e2e8f0', fontSize: 13 },
@@ -495,7 +496,7 @@ const barOption = computed(() => ({
     textStyle: { color: '#94a3b8', fontSize: 12 },
     itemHeight: 10,
   },
-  grid: { left: '2%', right: '2%', bottom: '14%', top: '6%', containLabel: true },
+  grid: { left: '2%', right: '2%', bottom: 65, top: '8%', containLabel: true },
   xAxis: {
     type: 'category',
     data: realMonthlyData.value.map(m => m.label),
@@ -518,7 +519,7 @@ const barOption = computed(() => ({
       data: realMonthlyData.value.map((m, i) => ({
         value: m.income,
         itemStyle: {
-          color: i === 5 ? '#2D6A4F' : '#3b82f6',
+          color: '#10b981',
           borderRadius: [5, 5, 0, 0],
           opacity: i === 5 ? 1 : 0.7,
         },
@@ -532,7 +533,7 @@ const barOption = computed(() => ({
       data: realMonthlyData.value.map((m, i) => ({
         value: m.expense,
         itemStyle: {
-          color: i === 5 ? '#E76F00' : '#f97316',
+          color: '#ef4444',
           borderRadius: [5, 5, 0, 0],
           opacity: i === 5 ? 1 : 0.7,
         },
@@ -611,9 +612,9 @@ const formatDate = d =>
   font-family: inherit;
 }
 .period-tab.active {
-  background: #2D6A4F;
+  background: #6366f1;
   color: #fff;
-  box-shadow: 0 3px 10px rgba(45,106,79,0.3);
+  box-shadow: 0 3px 10px rgba(99,102,241,0.3);
 }
 /* ── Month Picker (el-date-picker) ───────────────────────── */
 .month-picker-el {
@@ -644,7 +645,7 @@ const formatDate = d =>
   text-align: center !important;
 }
 .month-picker-el :deep(.el-input__prefix) {
-  color: #2D6A4F !important;
+  color: #6366f1 !important;
 }
 
 /* ── Summary Grid ─────────────────────────────────────────── */
@@ -686,54 +687,54 @@ const formatDate = d =>
   overflow: hidden; text-overflow: ellipsis;
 }
 .card-sub { font-size: 12px; font-weight: 500; }
-.income-sub { color: #2D6A4F; }
-.saving-sub { color: #2D6A4F; }
+.income-sub { color: #10b981; }
+.saving-sub { color: #10b981; }
 .health-sub { color: var(--text-secondary); font-size: 11px; }
-.trend-up   { color: #2D6A4F; }
+.trend-up   { color: #10b981; }
 
 .mini-progress-wrap { display: flex; align-items: center; gap: 8px; }
 .mini-progress-bar  { flex: 1; height: 5px; background: var(--card-border); border-radius: 9px; overflow: hidden; }
-.mini-progress-fill { height: 100%; background: #E76F00; border-radius: 9px; transition: width 0.6s ease; }
+.mini-progress-fill { height: 100%; background: #ef4444; border-radius: 9px; transition: width 0.6s ease; }
 .mini-progress-label { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
 
 .health-value { font-size: 16px !important; }
-.health-excellent { color: #2D6A4F !important; }
+.health-excellent { color: #10b981 !important; }
 .health-good      { color: #3b82f6 !important; }
-.health-mid       { color: #E76F00 !important; }
+.health-mid       { color: #f59e0b !important; }
 .health-bad       { color: #ef4444 !important; }
 
 /* ── Insight Banner ──────────────────────────────────────── */
 .insight-banner {
-  background: linear-gradient(135deg, #edf7f2 0%, #f6fbf8 100%);
-  border: 1px solid rgba(45,106,79,0.2);
-  border-left: 4px solid #2D6A4F;
+  background: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(99,102,241,0.02) 100%);
+  border: 1px solid rgba(99,102,241,0.2);
+  border-left: 4px solid #6366f1;
   border-radius: 16px;
   padding: 16px 20px;
   display: flex; align-items: center; justify-content: space-between;
   gap: 16px; margin-bottom: 14px;
 }
 body.theme-black .insight-banner {
-  background: rgba(45,106,79,0.1);
-  border-color: rgba(45,106,79,0.35);
-  border-left-color: #2D6A4F;
+  background: rgba(99,102,241,0.1);
+  border-color: rgba(99,102,241,0.35);
+  border-left-color: #6366f1;
 }
 body.theme-blue .insight-banner {
-  background: rgba(45,106,79,0.08);
-  border-color: rgba(45,106,79,0.25);
+  background: rgba(99,102,241,0.08);
+  border-color: rgba(99,102,241,0.25);
 }
 .insight-left { display: flex; align-items: flex-start; gap: 12px; flex: 1; }
 .insight-robot { font-size: 24px; flex-shrink: 0; }
 .insight-title {
-  font-size: 12px; font-weight: 700; color: #2D6A4F;
+  font-size: 12px; font-weight: 700; color: #6366f1;
   text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;
 }
 .insight-body { font-size: 14px; color: var(--text-primary); line-height: 1.55; }
 .insight-btn {
-  padding: 8px 16px; border: 1.5px solid #2D6A4F; border-radius: 10px;
-  background: transparent; color: #2D6A4F; font-size: 13px; font-weight: 600;
+  padding: 8px 16px; border: 1.5px solid #6366f1; border-radius: 10px;
+  background: transparent; color: #6366f1; font-size: 13px; font-weight: 600;
   cursor: pointer; white-space: nowrap; transition: all 0.2s; font-family: inherit;
 }
-.insight-btn:hover { background: #2D6A4F; color: #fff; }
+.insight-btn:hover { background: #6366f1; color: #fff; }
 
 .insight-detail {
   background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px;
@@ -751,15 +752,16 @@ body.theme-blue .insight-banner {
 .chart-card {
   background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 18px;
   padding: 20px 22px; transition: transform 0.25s ease, box-shadow 0.25s ease;
+  min-width: 0; width: 100%;
 }
 .chart-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
 .chart-header { margin-bottom: 16px; }
 .chart-title    { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 3px; }
 .chart-subtitle { font-size: 12px; color: var(--text-secondary); }
-.chart-wrapper  { border-radius: 10px; overflow: hidden; }
+.chart-wrapper  { border-radius: 10px; overflow: hidden; width: 100%; }
 .mobile-bar-summary { display: none; }
 
-.donut-wrapper { margin-bottom: 12px; }
+.donut-wrapper { margin-bottom: 12px; width: 100%; }
 .cat-list { display: flex; flex-direction: column; gap: 0; }
 .cat-row {
   display: flex; align-items: center; justify-content: space-between;
@@ -771,7 +773,7 @@ body.theme-blue .insight-banner {
 .cat-row-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .cat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 .cat-emoji-icon { font-size: 16px; }
-.cat-name  { font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
+.cat-name  { font-size: 13.5px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cat-amount { font-size: 13px; font-weight: 700; color: var(--text-primary); }
 .cat-pct    { font-size: 12px; color: var(--text-secondary); min-width: 32px; text-align: right; }
 .cat-chevron { color: var(--text-secondary); font-size: 12px; transition: transform 0.2s; }
@@ -826,7 +828,7 @@ body.theme-blue .insight-banner {
 .tx-name { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tx-meta { font-size: 12px; color: var(--text-secondary); }
 .tx-amount-tag { font-size: 14px; font-weight: 700; flex-shrink: 0; letter-spacing: -0.3px; }
-.tx-income  { color: #2D6A4F; }
+.tx-income  { color: #10b981; }
 .tx-expense { color: #ef4444; }
 
 .no-tx-msg {
@@ -839,7 +841,7 @@ body.theme-blue .insight-banner {
 @media (max-width: 1024px) {
   .summary-grid { grid-template-columns: repeat(2, 1fr); }
   .charts-row   { grid-template-columns: 1fr; }
-  .donut-wrapper { display: none; }
+  .donut-wrapper { margin-bottom: 24px; }
 }
 
 @media (max-width: 768px) {
@@ -852,15 +854,15 @@ body.theme-blue .insight-banner {
   .insight-banner { flex-direction: column; align-items: flex-start; gap: 12px; padding: 14px 16px; }
   .insight-btn { align-self: flex-start; }
   .chart-card { padding: 16px 16px; }
-  .chart-wrapper { display: none; }
-  .mobile-bar-summary { display: block; }
+  .chart-wrapper { margin-bottom: 16px; }
+  .mobile-bar-summary { display: block; background: rgba(0,0,0,0.02); border-radius: 12px; padding: 0 12px; }
   .mbs-row {
     display: flex; align-items: center; gap: 10px;
     padding: 8px 0; border-bottom: 1px solid var(--card-border); font-size: 13px;
   }
   .mbs-row:last-child { border-bottom: none; }
   .mbs-label   { font-weight: 600; color: var(--text-primary); width: 36px; }
-  .mbs-income  { color: #2D6A4F; font-weight: 700; flex: 1; }
+  .mbs-income  { color: #10b981; font-weight: 700; flex: 1; }
   .mbs-expense { color: #ef4444; font-weight: 700; flex: 1; text-align: right; }
 }
 </style>

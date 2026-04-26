@@ -102,6 +102,7 @@ const pieOption = computed(() => ({
 }))
 
 const barOption = computed(() => ({
+  color: ['#10b981', '#ef4444'],
   backgroundColor: 'transparent',
   tooltip: {
     trigger: 'axis',
@@ -109,7 +110,7 @@ const barOption = computed(() => ({
     formatter: (params) =>
       params.map(p => {
         const val = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.value)
-        return `${p.seriesName}: <b>${val}</b>`
+        return `${p.marker} ${p.seriesName}: <b>${val}</b>`
       }).join('<br/>'),
     backgroundColor: '#1e2130',
     borderColor: 'rgba(255,255,255,0.08)',
@@ -120,7 +121,7 @@ const barOption = computed(() => ({
     textStyle: { color: '#94a3b8' },
     bottom: 0,
   },
-  grid: { left: '3%', right: '4%', bottom: '14%', top: '8%', containLabel: true },
+  grid: { left: '3%', right: '4%', bottom: 65, top: '8%', containLabel: true },
   xAxis: {
     type: 'category',
     data: ['Tháng 4/2026'],
@@ -140,14 +141,14 @@ const barOption = computed(() => ({
       name: 'Thu nhập',
       type: 'bar',
       data: [store.totalIncome],
-      itemStyle: { color: '#3b82f6', borderRadius: [6, 6, 0, 0] },
+      itemStyle: { color: '#10b981', borderRadius: [6, 6, 0, 0] },
       barWidth: '32%',
     },
     {
       name: 'Chi tiêu',
       type: 'bar',
       data: [store.totalExpense],
-      itemStyle: { color: '#f97316', borderRadius: [6, 6, 0, 0] },
+      itemStyle: { color: '#ef4444', borderRadius: [6, 6, 0, 0] },
       barWidth: '32%',
     },
   ],
@@ -168,6 +169,8 @@ const barOption = computed(() => ({
   border-radius: 18px;
   padding: 22px 24px;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  min-width: 0;
+  width: 100%;
 }
 
 .chart-card:hover {
@@ -199,6 +202,7 @@ const barOption = computed(() => ({
 .chart-wrapper {
   border-radius: 10px;
   overflow: hidden;
+  width: 100%;
 }
 
 .no-data {

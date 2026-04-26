@@ -2,7 +2,7 @@
   <!-- Trigger Button -->
   <el-button type="primary" size="large" round @click="open" class="add-btn">
     <el-icon class="mr-1"><Plus /></el-icon>
-    Thêm Giao Dịch
+    <span class="btn-text">Thêm Giao Dịch</span>
   </el-button>
 
   <!-- ── Main Dialog ── -->
@@ -473,8 +473,8 @@ async function doSaveTransaction() {
   letter-spacing: 0.5px;
   background: linear-gradient(135deg, #6366f1, #3b82f6);
   border: none;
-  padding: 14px 32px;
-  font-size: 16px;
+  padding: 10px 20px;
+  font-size: 14px;
   box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -785,6 +785,20 @@ async function doSaveTransaction() {
   .option-preview { padding: 8px 10px; }
   .preview-row { font-size: 11px; }
 
+  /* Compact button on mobile */
+  .btn-text { display: none; }
+  .add-btn { 
+    padding: 0 !important; 
+    width: 42px !important; 
+    height: 42px !important; 
+    min-width: unset !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  .add-btn .mr-1 { margin-right: 0 !important; font-size: 18px; }
+  
   /* Footer stacked */
   .dialog-footer { flex-direction: column-reverse; gap: 8px; }
   .dialog-footer .el-button { width: 100% !important; height: 48px; min-width: unset; }

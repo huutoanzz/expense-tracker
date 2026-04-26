@@ -4,13 +4,15 @@
 **Smart Expense Tracker** là một ứng dụng quản lý tài chính cá nhân hiện đại, giúp bạn theo dõi thu nhập và chi tiêu một cách trực quan và hiệu quả. Với giao diện **Dark Mode + Blue Mode** sang trọng, hiệu ứng chuyển động mượt mà và các biểu đồ phân tích chuyên sâu, ứng dụng mang đến trải nghiệm người dùng cao cấp.
 
 ## ✨ Tính năng nổi bật
-- 📊 **Dashboard Trực Quan**: Tổng quan số dư, tổng thu và tổng chi thông qua các thẻ gradient đẹp mắt.
-- 📈 **Biểu Đồ Phân Tích**: Sử dụng **ECharts** để hiển thị cơ cấu chi tiêu (Pie Chart) và xu hướng tài chính (Line Chart).
-- 📝 **Quản Lý Giao Dịch**: Thêm, sửa, xóa và lọc các giao dịch dễ dàng với bảng dữ liệu tương tác từ **Element Plus**.
-- 🛠️ **Bộ Lọc Thông Minh**: Tìm kiếm giao dịch theo tên, loại (Thu/Chi) hoặc danh mục.
-- 💾 **Lưu Trữ Cục Bộ**: Dữ liệu được lưu tự động vào `localStorage`, đảm bảo không bị mất khi tải lại trang.
-- 🎨 **Giao Diện Hiện Đại**: Thiết kế theo phong cách Glassmorphism, hỗ trợ Responsive hoàn hảo trên mọi thiết bị.
-- 🪄 **Hiệu Ứng Mượt Mà**: Tích hợp `Animate.css` và `Auto-animate` cho các tương tác người dùng.
+- 📊 **Dashboard Trực Quan**: Tổng quan số dư, tổng thu, tổng chi và tỷ lệ phần trăm tiết kiệm/sức khỏe ngân sách qua các thẻ trực quan.
+- 🏺 **Quản Lý "Hũ Chi Tiêu" (Jar System)**: Quản lý ngân sách thông minh thông qua việc phân bổ tiền vào các quỹ/hũ khác nhau, chuyển tiền nội bộ và tự động hóa.
+- 🤖 **Trợ Lý Thông Minh (AI Insight)**: Phân tích thói quen chi tiêu và đưa ra gợi ý/cảnh báo giúp tối ưu hóa ngân sách.
+- 📈 **Biểu Đồ Phân Tích Chuyên Sâu**: Cơ cấu chi tiêu theo danh mục (Pie Chart / Donut Chart) và so sánh thu/chi qua các tháng (Bar Chart) bằng **ECharts**.
+- 📝 **Quản Lý Giao Dịch Nâng Cao**: Theo dõi các loại giao dịch (Thu nhập, Chi tiêu, Chuyển nội bộ, Điều chỉnh). Lọc, tìm kiếm, xóa hàng loạt với cơ chế an toàn cảnh báo bảo toàn quỹ.
+- 🎨 **Cá Nhân Hóa Giao Diện (Theming)**: Hỗ trợ 3 phong cách màu sắc: Sáng (White), Xanh (Blue) và Tối (Black).
+- 📱 **Thiết Kế Tương Thích (Responsive)**: Trải nghiệm hoàn hảo trên Desktop (Sidebar) và Mobile (Bottom Navigation, vuốt chạm thông minh).
+- 💾 **Lưu Trữ Cục Bộ (Local Storage)**: Dữ liệu an toàn, riêng tư tuyệt đối ngay trên trình duyệt mà không cần đăng nhập.
+- ⚙️ **Quản Lý Dữ Liệu**: Khả năng đặt lại (reset), xóa toàn bộ giao dịch và cài đặt từ trang Profile nhanh chóng.
 
 ## 🚀 Công nghệ sử dụng
 Dự án được xây dựng trên những công nghệ mới nhất:
