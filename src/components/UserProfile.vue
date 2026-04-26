@@ -169,8 +169,9 @@ const SOCIAL_MAP = [
   { hosts: ['github.com'],                       label: 'GitHub',    icon: 'github',    color: 'ffffff' },
   { hosts: ['facebook.com', 'm.facebook.com'],   label: 'Facebook',  icon: 'facebook',  color: '1877F2' },
   { hosts: ['twitter.com', 'x.com'],             label: 'X / Twitter', icon: 'x',       color: 'ffffff' },
-  { hosts: ['linkedin.com', 'www.linkedin.com'], label: 'LinkedIn',  icon: 'linkedin',  color: '0A66C2' },
+  { hosts: ['linkedin.com', 'www.linkedin.com', 'linkin.com'], label: 'LinkedIn',  icon: 'linkedin',  color: '0A66C2' },
   { hosts: ['instagram.com'],                    label: 'Instagram', icon: 'instagram', color: 'E4405F' },
+  { hosts: ['zalo.me'],                          label: 'Zalo',      icon: 'zalo',      color: '0068FF' },
   { hosts: ['open.spotify.com', 'spotify.com'],  label: 'Spotify',   icon: 'spotify',   color: '1DB954' },
   { hosts: ['youtube.com', 'youtu.be'],          label: 'YouTube',   icon: 'youtube',   color: 'FF0000' },
   { hosts: ['tiktok.com'],                       label: 'TikTok',    icon: 'tiktok',    color: 'ffffff' },
@@ -205,10 +206,15 @@ function getSocialInfo(raw) {
   )
 
   if (match) {
-    // cdn.simpleicons.org — brand SVG icons with brand color, supports all social platforms
+    let iconColor = match.color
+    // Improve visibility for light themes: change white icons to dark gray/black
+    if (store.theme === 'white' && iconColor.toLowerCase() === 'ffffff') {
+      iconColor = '18181b' // Dark zinc
+    }
+    
     return {
       label: match.label,
-      favicon: `https://cdn.simpleicons.org/${match.icon}/${match.color}`,
+      favicon: `https://cdn.simpleicons.org/${match.icon}/${iconColor}`,
     }
   }
 
@@ -361,7 +367,8 @@ async function handleSave() {
   font-size: 26px;
   font-weight: 800;
   color: white;
-  border: 3px solid var(--card-border);
+  border: 3px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 0 1px var(--card-border);
   position: relative;
   z-index: 2;
 }
@@ -426,8 +433,8 @@ async function handleSave() {
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  background: var(--el-input-bg-color);
   border: 1px solid var(--card-border);
   transition: all 0.2s ease;
   overflow: hidden;
@@ -490,8 +497,8 @@ async function handleSave() {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  background: var(--el-input-bg-color);
   border: 1px solid var(--card-border);
   overflow: hidden;
 }
