@@ -135,8 +135,8 @@
           </el-select>
         </div>
 
-        <!-- Table -->
-        <div class="table-card">
+        <!-- ── Desktop: Table ───────────────────────────────── -->
+        <div class="table-card desktop-only">
           <div v-auto-animate>
             <el-table
               v-loading="tableLoading"
@@ -172,38 +172,10 @@
 
               <el-table-column label="Loại" width="140" align="center">
                 <template #default="{ row }">
-                  <el-tag
-                    v-if="row.type === 'income'"
-                    type="success"
-                    size="small"
-                    round
-                  >
-                    ↑ Thu nhập
-                  </el-tag>
-                  <el-tag
-                    v-else-if="row.type === 'expense'"
-                    type="danger"
-                    size="small"
-                    round
-                  >
-                    ↓ Chi tiêu
-                  </el-tag>
-                  <el-tag
-                    v-else-if="row.type === 'internal'"
-                    type="info"
-                    size="small"
-                    round
-                  >
-                    ⇅ Chuyển nội bộ
-                  </el-tag>
-                  <el-tag
-                    v-else-if="row.type === 'adjustment'"
-                    type="warning"
-                    size="small"
-                    round
-                  >
-                    ⚖ Điều chỉnh
-                  </el-tag>
+                  <el-tag v-if="row.type === 'income'" type="success" size="small" round>↑ Thu nhập</el-tag>
+                  <el-tag v-else-if="row.type === 'expense'" type="danger" size="small" round>↓ Chi tiêu</el-tag>
+                  <el-tag v-else-if="row.type === 'internal'" type="info" size="small" round>⇅ Chuyển nội bộ</el-tag>
+                  <el-tag v-else-if="row.type === 'adjustment'" type="warning" size="small" round>⚖ Điều chỉnh</el-tag>
                 </template>
               </el-table-column>
 
@@ -264,6 +236,105 @@
             <span class="table-count">
               Hiển thị <b>{{ filteredTransactions.length }}</b> / {{ store.transactions.length }} giao dịch
             </span>
+          </div>
+        </div>
+
+        <!-- ── Mobile: Card List ─────────────────────────────── -->
+        <div class="mobile-only">
+          <!-- Summary strip -->
+          <div class="mobile-tx-summary">
+            <div class="mts-item">
+              <span class="mts-label">Tổng</span>
+              <span class="mts-value">{{ filteredTransactions.length }} giao dịch</span>
+            </div>
+            <div class="mts-divider" />
+            <div class="mts-item">
+              <span class="mts-label">Thu</span>
+              <span class="mts-value mts-income">+{{ formatVND(filteredTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)) }}</span>
+            </div>
+            <div class="mts-divider" />
+            <div class="mts-item">
+              <span class="mts-label">Chi</span>
+              <span class="mts-value mts-expense">-{{ formatVND(filteredTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)) }}</span>
+            </div>
+          </div>
+
+          <!-- Card list -->
+          <div class="mobile-tx-list" v-auto-animate>
+            <div
+              v-for="row in filteredTransactions"
+              :key="row.id"
+              class="mobile-tx-card"
+            >
+              <!-- Icon -->
+              <div
+                class="mobile-tx-icon"
+                :style="{ background: getCatColor(row.category) + '22', color: getCatColor(row.category) }"
+              >
+                <el-icon :size="18"><component :is="getCatIcon(row.category)" /></el-icon>
+              </div>
+
+              <!-- Info -->
+              <div class="mobile-tx-info">
+                <p class="mobile-tx-name">{{ row.description }}</p>
+                <div class="mobile-tx-meta">
+                  <span
+                    class="mobile-tx-type-chip"
+                    :class="{
+                      'chip-income': row.type === 'income',
+                      'chip-expense': row.type === 'expense',
+                      'chip-internal': row.type === 'internal',
+                      'chip-adjustment': row.type === 'adjustment',
+                    }"
+                  >
+                    <span v-if="row.type === 'income'">↑ Thu</span>
+                    <span v-else-if="row.type === 'expense'">↓ Chi</span>
+                    <span v-else-if="row.type === 'internal'">⇅ Nội bộ</span>
+                    <span v-else-if="row.type === 'adjustment'">⚖ Điều chỉnh</span>
+                  </span>
+                  <span class="mobile-tx-cat">{{ getCatLabel(row.category) }}</span>
+                  <span class="mobile-tx-dot">·</span>
+                  <span class="mobile-tx-date">{{ formatDate(row.date) }}</span>
+                </div>
+              </div>
+
+              <!-- Right: amount + delete -->
+              <div class="mobile-tx-right">
+                <span
+                  class="mobile-tx-amount"
+                  :class="{
+                    'income-amount': row.type === 'income',
+                    'expense-amount': row.type === 'expense',
+                    'internal-amount': row.type === 'internal',
+                    'adjustment-amount': row.type === 'adjustment',
+                  }"
+                >
+                  {{ (row.type === 'income' || (row.type === 'internal' && row.targetType === 'JAR')) ? '+' : '-' }}{{ formatVND(row.amount) }}
+                </span>
+                <el-button
+                  type="danger"
+                  size="small"
+                  circle
+                  plain
+                  :disabled="tableLoading"
+                  @click="confirmDelete(row)"
+                  class="mobile-tx-delete-btn"
+                >
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+              </div>
+            </div>
+
+            <!-- Empty state -->
+            <div v-if="filteredTransactions.length === 0" class="mobile-tx-empty">
+              <span class="mobile-tx-empty-icon">📭</span>
+              <p>Không có giao dịch nào</p>
+              <p class="mobile-tx-empty-sub">Thử thay đổi bộ lọc hoặc thêm giao dịch mới</p>
+            </div>
+          </div>
+
+          <div class="mobile-tx-footer">
+            Hiển thị <b>{{ filteredTransactions.length }}</b> / {{ store.transactions.length }} giao dịch
           </div>
         </div>
       </section>
@@ -940,6 +1011,159 @@ async function handleResetDefault() {
   color: var(--text-secondary);
 }
 
+/* ── Desktop / Mobile visibility helpers ─────────────────── */
+.desktop-only { display: block; }
+.mobile-only  { display: none; }
+
+/* ── Mobile Transaction Cards ────────────────────────────── */
+.mobile-tx-summary {
+  display: flex;
+  align-items: center;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 14px 18px;
+  margin-bottom: 12px;
+  gap: 0;
+}
+.mts-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.mts-divider {
+  width: 1px;
+  height: 32px;
+  background: var(--card-border);
+  flex-shrink: 0;
+}
+.mts-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.mts-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.mts-income  { color: #2D6A4F; }
+.mts-expense { color: #ef4444; }
+
+.mobile-tx-list {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 18px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.mobile-tx-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--card-border);
+  transition: background 0.15s ease;
+}
+.mobile-tx-card:last-child { border-bottom: none; }
+.mobile-tx-card:active { background: rgba(47,164,168,0.05); }
+
+.mobile-tx-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mobile-tx-info {
+  flex: 1;
+  min-width: 0;
+}
+.mobile-tx-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mobile-tx-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+.mobile-tx-type-chip {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.chip-income     { background: rgba(45,106,79,0.12);  color: #2D6A4F; }
+.chip-expense    { background: rgba(239,68,68,0.1);   color: #ef4444; }
+.chip-internal   { background: rgba(99,102,241,0.1);  color: #6366f1; }
+.chip-adjustment { background: rgba(245,158,11,0.12); color: #f59e0b; }
+
+.mobile-tx-cat {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
+}
+.mobile-tx-dot  { font-size: 11px; color: var(--text-secondary); opacity: 0.4; flex-shrink: 0; }
+.mobile-tx-date { font-size: 11px; color: var(--text-secondary); white-space: nowrap; flex-shrink: 0; }
+
+.mobile-tx-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.mobile-tx-amount {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+}
+.mobile-tx-delete-btn {
+  width: 28px !important;
+  height: 28px !important;
+}
+
+.mobile-tx-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 20px;
+  text-align: center;
+}
+.mobile-tx-empty-icon { font-size: 38px; }
+.mobile-tx-empty p    { font-size: 14px; font-weight: 600; color: var(--text-secondary); }
+.mobile-tx-empty-sub  { font-size: 12px !important; }
+
+.mobile-tx-footer {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 4px 0 2px;
+}
+
 
 /* ── Table cell elements ─────────────────────────────────── */
 .cat-icon-wrap {
@@ -1083,6 +1307,10 @@ async function handleResetDefault() {
   .el-table .el-table__cell:nth-child(1) { /* checkbox */
     min-width: 40px;
   }
+
+  /* Show mobile cards, hide desktop table */
+  .desktop-only { display: none !important; }
+  .mobile-only  { display: block !important; }
 
   /* Table footer */
   .table-footer {

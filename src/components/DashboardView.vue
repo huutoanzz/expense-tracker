@@ -12,7 +12,19 @@
           @click="activePeriod = p.key"
         >{{ p.label }}</button>
       </div>
-      <span class="period-date">{{ formattedDate }}</span>
+
+      <el-date-picker
+        v-if="activePeriod === 'month'"
+        v-model="selectedMonth"
+        type="month"
+        placeholder="Chọn tháng"
+        format="MM/YYYY"
+        value-format="YYYY-MM"
+        :clearable="false"
+        :editable="false"
+        class="month-picker-el"
+        popper-class="month-picker-popper"
+      />
     </div>
 
     <!-- ── Summary Cards ───────────────────────────────────── -->
@@ -243,42 +255,49 @@ const store = useExpenseStore()
 
 // ── Period ──────────────────────────────────────────────────
 const periods = [
-  { key: 'month',    label: 'Tháng này' },
-  { key: 'last',     label: 'Tháng trước' },
-  { key: 'quarter',  label: 'Quý này' },
-  { key: 'year',     label: 'Năm nay' },
+  { key: 'month',   label: 'Theo tháng'  },
+  { key: 'last',    label: 'Tháng trước' },
+  { key: 'quarter', label: 'Quý này'     },
+  { key: 'year',    label: 'Năm nay'     },
 ]
 const activePeriod = ref('month')
 const activePeriodLabel = computed(() => periods.find(p => p.key === activePeriod.value)?.label)
 
-// ── Date ────────────────────────────────────────────────────
-const formattedDate = computed(() =>
-  new Intl.DateTimeFormat('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
-    .format(new Date())
+// ── Month Picker ─────────────────────────────────────────────
+const _now = new Date()
+// Mặc định: tháng hiện tại, format "YYYY-MM"
+const selectedMonth = ref(
+  `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}`
 )
+
+// Parse selectedMonth → { year, month (0-indexed) }
+const selectedMonthMeta = computed(() => {
+  const [y, m] = selectedMonth.value.split('-').map(Number)
+  return { year: y, month: m - 1 }
+})
 
 // ── Real Data Calculation ───────────────────────────────────
 const getFilteredTransactions = (period) => {
   const now = new Date()
-  const currentYear = now.getFullYear()
+  const currentYear  = now.getFullYear()
   const currentMonth = now.getMonth()
 
   return store.transactions.filter(t => {
-    const tDate = new Date(t.date)
-    const tYear = tDate.getFullYear()
+    const tDate  = new Date(t.date)
+    const tYear  = tDate.getFullYear()
     const tMonth = tDate.getMonth()
 
     if (period === 'month') {
-      return tYear === currentYear && tMonth === currentMonth
+      return tYear === selectedMonthMeta.value.year && tMonth === selectedMonthMeta.value.month
     }
     if (period === 'last') {
       const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1
-      const lastYear = currentMonth === 0 ? currentYear - 1 : currentYear
+      const lastYear  = currentMonth === 0 ? currentYear - 1 : currentYear
       return tYear === lastYear && tMonth === lastMonth
     }
     if (period === 'quarter') {
       const currentQuarter = Math.floor(currentMonth / 3)
-      const tQuarter = Math.floor(tMonth / 3)
+      const tQuarter       = Math.floor(tMonth / 3)
       return tYear === currentYear && tQuarter === currentQuarter
     }
     if (period === 'year') {
@@ -591,10 +610,36 @@ const formatDate = d =>
   color: #fff;
   box-shadow: 0 3px 10px rgba(45,106,79,0.3);
 }
-.period-date {
-  font-size: 13px;
-  color: var(--text-secondary);
-  white-space: nowrap;
+/* ── Month Picker (el-date-picker) ───────────────────────── */
+.month-picker-el {
+  width: 148px !important;
+}
+
+/* Override El input wrapper để khớp style period-tabs */
+.month-picker-el :deep(.el-input__wrapper) {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--card-border) !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+  padding: 0 12px !important;
+  height: 36px !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+.month-picker-el :deep(.el-input__wrapper:hover) {
+  border-color: var(--accent) !important;
+}
+.month-picker-el :deep(.el-input__wrapper.is-focus) {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(47,164,168,0.15) !important;
+}
+.month-picker-el :deep(.el-input__inner) {
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  color: var(--text-primary) !important;
+  text-align: center !important;
+}
+.month-picker-el :deep(.el-input__prefix) {
+  color: #2D6A4F !important;
 }
 
 /* ── Summary Grid ─────────────────────────────────────────── */
@@ -786,7 +831,6 @@ body.theme-blue .insight-banner {
   .dashboard { padding: 14px 12px 24px; }
   .period-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
   .period-tabs::-webkit-scrollbar { display: none; }
-  .period-date { display: none; }
   .summary-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
   .summary-card { padding: 14px; gap: 10px; border-radius: 14px; }
   .card-value { font-size: 15px; }
