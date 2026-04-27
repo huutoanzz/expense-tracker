@@ -67,7 +67,7 @@
 
       <!-- ── Dashboard Tab ──────────────────────────── -->
       <section v-if="activeTab === 'dashboard'" class="tab-section animate__animated animate__fadeIn">
-        <DashboardView @navigate="activeTab = $event" />
+        <DashboardView @navigate="handleNavigate" />
       </section>
 
       <!-- ── Jars Tab ─────────────────────────────── -->
@@ -454,6 +454,18 @@ function handleSelectionChange(val) {
 const sidebarCollapsed = ref(false)
 const activeTab = ref('dashboard')
 const mobileNavOpen = ref(false)
+
+function handleNavigate(target) {
+  if (typeof target === 'string') {
+    activeTab.value = target
+  } else {
+    activeTab.value = target.tab
+    if (target.filter) {
+      filterType.value = target.filter.type || ''
+      filterCategory.value = target.filter.category || ''
+    }
+  }
+}
 
 // ── Swipe gesture to open/close sidebar on mobile ─────────
 let touchStartX = 0
@@ -855,6 +867,8 @@ async function handleResetDefault() {
 .settings-section {
   text-align: center;
 }
+.mb-6 { margin-bottom: 32px; }
+.mb-3 { margin-bottom: 12px; }
 .section-title {
   font-size: 16px;
   font-weight: 700;
@@ -889,7 +903,7 @@ async function handleResetDefault() {
   letter-spacing: 0.5px;
 }
 :deep(.settings-dialog .el-dialog__body) {
-  padding: 30px 25px;
+  padding: 24px 25px 30px !important;
 }
 :deep(.settings-dialog .el-button) {
   height: 44px;

@@ -134,25 +134,44 @@
 
           <!-- Category list — always visible -->
           <div class="cat-list">
-            <div
-              v-for="cat in topCategories"
-              :key="cat.name"
-              class="cat-row"
-              @click="toggleCatDetail(cat.name)"
-            >
-              <div class="cat-row-left">
-                <span class="cat-dot" :style="{ background: cat.color }" />
-                <span class="cat-emoji-icon">{{ cat.emoji }}</span>
-                <span class="cat-name">{{ cat.name }}</span>
+            <template v-for="cat in topCategories" :key="cat.id">
+              <div
+                class="cat-row"
+                @click="toggleCatDetail(cat.id)"
+              >
+                <div class="cat-row-left">
+                  <span class="cat-dot" :style="{ background: cat.color }" />
+                  <span class="cat-emoji-icon">{{ cat.emoji }}</span>
+                  <span class="cat-name">{{ cat.name }}</span>
+                </div>
+                <div class="cat-row-right">
+                  <span class="cat-amount">{{ formatVND(cat.value) }}</span>
+                  <span class="cat-pct">{{ cat.pct }}%</span>
+                  <el-icon class="cat-chevron" :class="{ rotated: expandedCat === cat.id }">
+                    <ArrowDown />
+                  </el-icon>
+                </div>
               </div>
-              <div class="cat-row-right">
-                <span class="cat-amount">{{ formatVND(cat.value) }}</span>
-                <span class="cat-pct">{{ cat.pct }}%</span>
-                <el-icon class="cat-chevron" :class="{ rotated: expandedCat === cat.name }">
-                  <ArrowDown />
-                </el-icon>
+
+              <!-- Chi tiết giao dịch của danh mục -->
+              <div v-if="expandedCat === cat.id" class="cat-detail-dropdown animate__animated animate__fadeIn">
+                <div class="cat-detail-tx-list">
+                  <div v-for="tx in getRecentTransactionsForCat(cat.id)" :key="tx.id" class="cat-detail-tx">
+                    <div class="cat-tx-left">
+                      <span class="cat-tx-date">{{ formatDateShort(tx.date) }}</span>
+                      <span class="cat-tx-desc">{{ tx.description }}</span>
+                    </div>
+                    <span class="cat-tx-amount">-{{ formatVND(tx.amount) }}</span>
+                  </div>
+                  <div v-if="getRecentTransactionsForCat(cat.id).length === 0" class="cat-tx-empty">
+                    Không có giao dịch gần đây.
+                  </div>
+                </div>
+                <button class="cat-see-all-btn" @click="goToTransactionsFiltered(cat.id)">
+                  Xem thêm tất cả <span class="see-all-arrow">→</span>
+                </button>
               </div>
-            </div>
+            </template>
 
             <!-- Expense progress bars -->
             <div class="cat-bars" v-if="topCategories.length">
@@ -407,6 +426,7 @@ const topCategories = computed(() => {
   return Object.entries(map).map(([key, value]) => {
     const cat = CATEGORIES.find(c => c.value === key)
     return {
+      id: key,
       name: cat?.label ?? key,
       value,
       color: cat?.color ?? '#6b7280',
@@ -421,8 +441,20 @@ const topCategories = computed(() => {
 const hasExpenseData = computed(() => topCategories.value.length > 0)
 
 const expandedCat = ref(null)
-function toggleCatDetail(name) {
-  expandedCat.value = expandedCat.value === name ? null : name
+function toggleCatDetail(id) {
+  expandedCat.value = expandedCat.value === id ? null : id
+}
+
+function getRecentTransactionsForCat(categoryId) {
+  const txs = getFilteredTransactions(activePeriod.value)
+  return txs
+    .filter(t => t.category === categoryId && t.type === 'expense')
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 4)
+}
+
+function goToTransactionsFiltered(categoryId) {
+  emit('navigate', { tab: 'transactions', filter: { type: 'expense', category: categoryId } })
 }
 
 // ── Donut chart ─────────────────────────────────────────────
@@ -572,6 +604,10 @@ const formatShort = v => {
 
 const formatDate = d =>
   new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    .format(new Date(d))
+
+const formatDateShort = d =>
+  new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit' })
     .format(new Date(d))
 </script>
 
@@ -778,6 +814,80 @@ body.theme-blue .insight-banner {
 .cat-pct    { font-size: 12px; color: var(--text-secondary); min-width: 32px; text-align: right; }
 .cat-chevron { color: var(--text-secondary); font-size: 12px; transition: transform 0.2s; }
 .cat-chevron.rotated { transform: rotate(180deg); }
+
+.cat-detail-dropdown {
+  background: rgba(99, 102, 241, 0.04);
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  border: 1px solid var(--card-border);
+}
+.cat-detail-tx-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.cat-detail-tx {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+.cat-tx-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.cat-tx-date {
+  color: var(--text-secondary);
+  font-size: 11px;
+  background: var(--card-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.cat-tx-desc {
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cat-tx-amount {
+  font-weight: 600;
+  color: #ef4444;
+  white-space: nowrap;
+}
+.cat-tx-empty {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 8px 0;
+}
+.cat-see-all-btn {
+  width: 100%;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6366f1;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.cat-see-all-btn:hover {
+  background: #6366f1;
+  color: #fff;
+  border-color: #6366f1;
+}
 
 .cat-bars { padding: 12px 0 4px; display: flex; flex-direction: column; gap: 9px; }
 .cat-bar-row { display: flex; align-items: center; gap: 8px; }
