@@ -80,6 +80,11 @@
         <UserProfile />
       </section>
 
+      <!-- ── Budget Tab ─────────────────────────────── -->
+      <section v-if="activeTab === 'budget'" class="tab-section animate__animated animate__fadeIn">
+        <BudgetDashboard />
+      </section>
+
       <!-- ── Transactions Tab ───────────────────────── -->
       <section v-if="activeTab === 'transactions'" class="tab-section animate__animated animate__fadeIn">
         <!-- ✅ CẢNH BÁO THEME-FRIENDLY (KHÔNG CAM) -->
@@ -431,6 +436,7 @@ import DashboardView from './components/DashboardView.vue'
 import ExpenseForm from './components/ExpenseForm.vue'
 import UserProfile from './components/UserProfile.vue'
 import JarDashboard from './components/JarDashboard.vue'
+import BudgetDashboard from './components/BudgetDashboard.vue'
 
 const store = useExpenseStore()
 const tableLoading = ref(false)
@@ -497,6 +503,11 @@ const navItems = computed(() => [
     icon: 'DataBoard',
   },
   {
+    key: 'budget',
+    label: 'Ngân Sách',
+    icon: 'PieChart',
+  },
+  {
     key: 'jars',
     label: 'Hũ Chi Tiêu',
     icon: 'Wallet',
@@ -517,6 +528,7 @@ const navItems = computed(() => [
 const pageMap = {
   dashboard: { title: 'Dashboard', subtitle: 'Tổng quan tài chính của bạn' },
   jars: { title: 'Hũ Chi Tiêu', subtitle: 'Quản lý ngân sách thông minh' },
+  budget: { title: 'Phân Bổ Ngân Sách', subtitle: 'Gợi ý phân bổ theo quy tắc 50/30/20' },
   transactions: { title: 'Giao Dịch', subtitle: 'Quản lý thu chi chi tiết' },
   profile: { title: 'Profile', subtitle: 'Quản lý tài khoản của bạn' },
 }

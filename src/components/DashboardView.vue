@@ -25,6 +25,43 @@
         class="month-picker-el"
         popper-class="month-picker-popper"
       />
+
+      <div v-if="activePeriod === 'quarter'" class="quarter-selector-wrap">
+        <el-date-picker
+          v-model="quarterYear"
+          type="year"
+          placeholder="Năm"
+          value-format="YYYY"
+          :clearable="false"
+          :editable="false"
+          class="year-picker-el"
+          popper-class="month-picker-popper"
+        />
+        <el-select
+          v-model="quarterVal"
+          placeholder="Quý"
+          class="quarter-select-el"
+          popper-class="quarter-select-popper"
+        >
+          <el-option :value="1" label="Quý 1" />
+          <el-option :value="2" label="Quý 2" />
+          <el-option :value="3" label="Quý 3" />
+          <el-option :value="4" label="Quý 4" />
+        </el-select>
+      </div>
+
+      <el-date-picker
+        v-if="activePeriod === 'year'"
+        v-model="selectedYear"
+        type="year"
+        placeholder="Chọn năm"
+        format="YYYY"
+        value-format="YYYY"
+        :clearable="false"
+        :editable="false"
+        class="month-picker-el"
+        popper-class="month-picker-popper"
+      />
     </div>
 
     <!-- ── Summary Cards ───────────────────────────────────── -->
@@ -281,17 +318,41 @@ const store = useExpenseStore()
 const periods = [
   { key: 'month',   label: 'Theo tháng'  },
   { key: 'last',    label: 'Tháng trước' },
-  { key: 'quarter', label: 'Quý này'     },
-  { key: 'year',    label: 'Năm nay'     },
+  { key: 'quarter', label: 'Theo quý'    },
+  { key: 'year',    label: 'Theo năm'    },
 ]
 const activePeriod = ref('month')
-const activePeriodLabel = computed(() => periods.find(p => p.key === activePeriod.value)?.label)
+const activePeriodLabel = computed(() => {
+  if (activePeriod.value === 'month') {
+    const { year, month } = selectedMonthMeta.value
+    return `Tháng ${month + 1}/${year}`
+  }
+  if (activePeriod.value === 'quarter') {
+    const [y, q] = selectedQuarter.value.split('-Q')
+    return `Quý ${q}/${y}`
+  }
+  if (activePeriod.value === 'year') {
+    return `Năm ${selectedYear.value}`
+  }
+  return periods.find(p => p.key === activePeriod.value)?.label
+})
 
-// ── Month Picker ─────────────────────────────────────────────
+// ── Date Selection Refs ─────────────────────────────────────
 const _now = new Date()
-// Mặc định: tháng hiện tại, format "YYYY-MM"
+
+// Month: default current month "YYYY-MM"
 const selectedMonth = ref(
   `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}`
+)
+
+// Quarter selection: year + quarter
+const quarterYear = ref(_now.getFullYear().toString())
+const quarterVal = ref(Math.floor(_now.getMonth() / 3) + 1)
+const selectedQuarter = computed(() => `${quarterYear.value}-Q${quarterVal.value}`)
+
+// Year: default current year "YYYY"
+const selectedYear = ref(
+  `${_now.getFullYear()}`
 )
 
 // Parse selectedMonth → { year, month (0-indexed) }
@@ -320,12 +381,15 @@ const getFilteredTransactions = (period) => {
       return tYear === lastYear && tMonth === lastMonth
     }
     if (period === 'quarter') {
-      const currentQuarter = Math.floor(currentMonth / 3)
-      const tQuarter       = Math.floor(tMonth / 3)
-      return tYear === currentYear && tQuarter === currentQuarter
+      const [y, qStr] = selectedQuarter.value.split('-Q')
+      const yNum = Number(y)
+      const qNum = Number(qStr)
+      const tQuarter = Math.floor(tMonth / 3) + 1
+      return tYear === yNum && tQuarter === qNum
     }
     if (period === 'year') {
-      return tYear === currentYear
+      const yNum = Number(selectedYear.value)
+      return tYear === yNum
     }
     return true
   })
@@ -400,39 +464,88 @@ const showInsightDetail = ref(false)
 const insightMessage = computed(() => {
   const inc = displayData.value.income
   const exp = displayData.value.expense
+  const topCat = topCategories.value[0]
 
-  if (inc === 0 && exp > 0) return 'Cảnh báo: Bạn đang phát sinh chi phí khi chưa có nguồn thu. Hãy bổ sung thu nhập để tránh thâm hụt tài chính!'
-  if (inc === 0) return 'Bạn chưa có thu nhập trong kỳ này. Hãy ghi lại các nguồn thu để trợ lý phân tích chính xác hơn.'
+  if (inc === 0 && exp === 0) return 'Chào mừng bạn! Hãy bắt đầu ghi lại các giao dịch để tôi có thể phân tích và đưa ra lời khuyên tài chính cho bạn.'
+  if (inc === 0 && exp > 0) return 'Cảnh báo: Bạn đang chi tiêu mà không có nguồn thu. Hãy kiểm tra lại các khoản thu nhập hoặc sử dụng quỹ dự phòng một cách cẩn trọng.'
   
-  if (exp > inc) return `Tình hình đang khá nghiêm trọng! Bạn đã chi vượt thu nhập ${formatVND(exp - inc)}. Hãy rà soát ngay các khoản chi không cần thiết.`
+  if (exp > inc) {
+    const deficit = exp - inc
+    return `Tình hình tài chính đang báo động! Bạn đã chi vượt thu mức ${formatVND(deficit)}. Hãy rà soát ngay danh mục "${topCat?.name || 'Chi tiêu'}" để cắt giảm các khoản không thiết yếu.`
+  }
   
-  if (spendingRate.value > 80) return `Tháng này bạn chi đến ${spendingRate.value}% thu nhập. Bạn đang ở ngưỡng nguy hiểm, hãy thắt chặt chi tiêu ngay!`
-  if (spendingRate.value > 60) return `Bạn đã chi ${spendingRate.value}% thu nhập. Mức tiết kiệm đang hơi thấp, hãy thử cắt giảm danh mục "${topCategories.value[0]?.name}" xem sao.`
-  if (spendingRate.value > 40) return `Bạn đã chi ${spendingRate.value}% thu nhập. Mức độ kiểm soát khá ổn, cố gắng duy trì nhé!`
-  return `Tuyệt vời! Bạn chỉ chi ${spendingRate.value}% thu nhập. Đây là nền tảng tài chính cực kỳ lành mạnh.`
+  const rate = spendingRate.value
+  if (rate > 80) return `Bạn đã sử dụng ${rate}% thu nhập. Mức an toàn tài chính đang ở mức thấp. Hãy hạn chế tối đa việc mua sắm không cần thiết trong thời gian tới.`
+  
+  if (topCat && topCat.pct > 40) {
+    return `Danh mục "${topCat.name}" đang chiếm đến ${topCat.pct}% tổng chi của bạn. Đây là khu vực tiềm năng nhất để bạn có thể tối ưu hóa và tăng khoản tiết kiệm.`
+  }
+
+  if (rate < 50) return `Tuyệt vời! Bạn đang kiểm soát chi tiêu rất tốt (${rate}% thu nhập). Hãy cân nhắc đầu tư khoản tiền nhàn rỗi ${formatVND(displayData.value.saving)} để gia tăng tài sản.`
+  
+  return `Bạn đã chi ${rate}% thu nhập. Mức độ kiểm soát khá ổn. Để tốt hơn, hãy thử áp dụng quy tắc 50/30/20: 50% cho nhu cầu, 30% cho mong muốn và 20% cho tiết kiệm.`
 })
+
 const insightTips = computed(() => {
+  const inc = displayData.value.income
+  const exp = displayData.value.expense
+  const topCat = topCategories.value[0]
   const tips = []
-  if (topCategories.value[0]) {
+
+  // Tip 1: Top Category specific advice
+  if (topCat) {
+    let categoryAdvice = ''
+    switch (topCat.id) {
+      case 'food':
+        categoryAdvice = 'Thử lên kế hoạch thực đơn tuần và tự nấu ăn tại nhà để giảm chi phí ăn ngoài.'
+        break
+      case 'shopping':
+        categoryAdvice = 'Áp dụng quy tắc "chờ 24h" trước khi chốt đơn để tránh mua sắm theo cảm xúc.'
+        break
+      case 'transport':
+        categoryAdvice = 'Cân nhắc sử dụng phương tiện công cộng hoặc đi chung xe nếu quãng đường cho phép.'
+        break
+      case 'entertainment':
+        categoryAdvice = 'Tìm kiếm các hoạt động giải trí miễn phí hoặc săn mã giảm giá trước khi sử dụng dịch vụ.'
+        break
+      default:
+        categoryAdvice = `Rà soát các khoản chi trong danh mục ${topCat.name} để tìm ra những khoản có thể cắt giảm.`
+    }
+    
     tips.push({
       id: 1,
-      icon: '🏠',
-      title: `Danh mục tốn nhiều nhất: ${topCategories.value[0].name}`,
-      desc: `Chiếm ${topCategories.value[0].pct}% tổng chi tiêu của bạn trong kỳ này.`,
+      icon: topCat.emoji,
+      title: `Tối ưu hóa danh mục ${topCat.name}`,
+      desc: categoryAdvice
     })
   }
-  tips.push({
-    id: 2,
-    icon: '📈',
-    title: 'Gợi ý tiết kiệm',
-    desc: 'Thử đặt mục tiêu tiết kiệm ít nhất 20% thu nhập mỗi tháng.',
-  })
+
+  // Tip 2: Potential savings
+  if (topCat && topCat.value > 500000) {
+    const potentialSaving = Math.round(topCat.value * 0.15)
+    tips.push({
+      id: 2,
+      icon: '💰',
+      title: 'Mục tiêu tiết kiệm khả thi',
+      desc: `Nếu bạn giảm 15% chi tiêu cho ${topCat.name}, bạn sẽ có thêm ${formatVND(potentialSaving)} mỗi kỳ.`
+    })
+  } else {
+    tips.push({
+      id: 2,
+      icon: '📈',
+      title: 'Xây dựng quỹ dự phòng',
+      desc: 'Hãy cố gắng duy trì quỹ dự phòng khẩn cấp tương đương 3-6 tháng chi tiêu cơ bản.'
+    })
+  }
+
+  // Tip 3: General financial habit
   tips.push({
     id: 3,
     icon: '🔔',
-    title: 'Nhắc nhở',
-    desc: 'Ghi lại giao dịch ngay khi phát sinh giúp bạn kiểm soát chi tiêu tốt hơn.',
+    title: 'Thói quen ghi chép',
+    desc: 'Việc ghi chép ngay sau khi chi tiêu giúp bạn nhận thức tốt hơn về dòng tiền và tránh lạm chi.'
   })
+
   return tips
 })
 
@@ -683,27 +796,46 @@ const formatDateShort = d =>
 }
 /* ── Month Picker (el-date-picker) ───────────────────────── */
 .month-picker-el {
-  width: 148px !important;
+  width: 160px !important;
+}
+.quarter-selector-wrap {
+  display: flex;
+  gap: 8px;
+}
+.year-picker-el {
+  width: 100px !important;
+}
+.quarter-select-el {
+  width: 105px !important;
 }
 
 /* Override El input wrapper để khớp style period-tabs */
-.month-picker-el :deep(.el-input__wrapper) {
+.month-picker-el :deep(.el-input__wrapper),
+.year-picker-el :deep(.el-input__wrapper),
+.quarter-select-el :deep(.el-select__wrapper) {
   background: var(--card-bg) !important;
   border: 1px solid var(--card-border) !important;
   border-radius: 10px !important;
   box-shadow: none !important;
   padding: 0 12px !important;
   height: 36px !important;
+  min-height: 36px !important;
   transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
 }
-.month-picker-el :deep(.el-input__wrapper:hover) {
+.month-picker-el :deep(.el-input__wrapper:hover),
+.year-picker-el :deep(.el-input__wrapper:hover),
+.quarter-select-el :deep(.el-select__wrapper:hover) {
   border-color: var(--accent) !important;
 }
-.month-picker-el :deep(.el-input__wrapper.is-focus) {
+.month-picker-el :deep(.el-input__wrapper.is-focus),
+.year-picker-el :deep(.el-input__wrapper.is-focus),
+.quarter-select-el :deep(.el-select__wrapper.is-focused) {
   border-color: var(--accent) !important;
   box-shadow: 0 0 0 3px rgba(47,164,168,0.15) !important;
 }
-.month-picker-el :deep(.el-input__inner) {
+.month-picker-el :deep(.el-input__inner),
+.year-picker-el :deep(.el-input__inner),
+.quarter-select-el :deep(.el-select__selected-item) {
   font-size: 13.5px !important;
   font-weight: 600 !important;
   color: var(--text-primary) !important;
