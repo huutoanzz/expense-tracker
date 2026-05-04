@@ -34,13 +34,30 @@
 
       <div class="sidebar-footer">
         <div class="footer-actions">
-          <el-button class="footer-icon-btn" @click="sidebarCollapsed = !sidebarCollapsed">
-            <el-icon :size="18">
+          <el-button 
+            class="footer-icon-btn side-btn" 
+            title="Thu gọn"
+            @click="sidebarCollapsed = !sidebarCollapsed"
+          >
+            <el-icon :size="16">
               <component :is="sidebarCollapsed ? 'ArrowRight' : 'ArrowLeft'" />
             </el-icon>
           </el-button>
-          <el-button class="footer-icon-btn" @click="settingsVisible = true">
-            <el-icon :size="18"><Setting /></el-icon>
+
+          <el-button 
+            class="footer-icon-btn main-settings-btn" 
+            title="Cài đặt"
+            @click="settingsVisible = true"
+          >
+            <el-icon :size="20"><Setting /></el-icon>
+          </el-button>
+
+          <el-button 
+            class="footer-icon-btn side-btn feedback-btn" 
+            title="Góp ý & Liên hệ"
+            @click="handleContact"
+          >
+            <el-icon :size="18"><ChatDotRound /></el-icon>
           </el-button>
         </div>
       </div>
@@ -443,6 +460,10 @@ const tableLoading = ref(false)
 const selectedRows = ref([])
 const settingsVisible = ref(false)
 
+function handleContact() {
+  window.open('https://www.facebook.com/htoandeptrai', '_blank')
+}
+
 // ── Theme Management ──────────────────────────────────────
 watch(() => store.theme, (newTheme) => {
   document.body.className = `theme-${newTheme}`
@@ -776,6 +797,7 @@ async function handleResetDefault() {
     // cancelled
   }
 }
+
 </script>
 
 <style scoped>
@@ -887,34 +909,57 @@ async function handleResetDefault() {
 
 .footer-actions {
   display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 12px;
   width: 100%;
 }
 .sidebar.collapsed .footer-actions {
   flex-direction: column;
-  align-items: center;
+  gap: 16px;
 }
 
 .footer-icon-btn {
   background: var(--card-bg) !important;
   border: 1px solid var(--card-border) !important;
-  border-radius: 10px;
-  width: 36px !important;
-  height: 36px !important;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   color: var(--text-secondary);
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 0 !important;
   margin: 0 !important;
 }
-.footer-icon-btn:hover {
+
+.main-settings-btn {
+  width: 34px !important;
+  height: 34px !important;
+  color: #6366f1;
+}
+.main-settings-btn:hover {
   background: rgba(99,102,241,0.1) !important;
   color: #6366f1 !important;
   border-color: #6366f1 !important;
+}
+
+.side-btn {
+  width: 34px !important;
+  height: 34px !important;
+  opacity: 0.8;
+}
+.side-btn:hover {
+  opacity: 1;
+  background: rgba(99,102,241,0.1) !important;
+  color: #6366f1 !important;
+  border-color: #6366f1 !important;
+}
+
+.feedback-btn:hover {
+  color: #10b981 !important;
+  border-color: #10b981 !important;
+  background: rgba(16,185,129,0.1) !important;
 }
 
 /* ── Settings Dialog ─────────────────────────────────────── */
