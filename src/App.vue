@@ -549,7 +549,7 @@ const navItems = computed(() => [
 const pageMap = {
   dashboard: { title: 'Dashboard', subtitle: 'Tổng quan tài chính của bạn' },
   jars: { title: 'Hũ Chi Tiêu', subtitle: 'Quản lý ngân sách thông minh' },
-  budget: { title: 'Phân Bổ Ngân Sách', subtitle: 'Gợi ý phân bổ theo quy tắc 50/30/20' },
+  budget: { title: 'Ngân Sách', subtitle: 'Gợi ý phân bổ theo quy tắc 50/30/20' },
   transactions: { title: 'Giao Dịch', subtitle: 'Quản lý thu chi chi tiết' },
   profile: { title: 'Profile', subtitle: 'Quản lý tài khoản của bạn' },
 }
