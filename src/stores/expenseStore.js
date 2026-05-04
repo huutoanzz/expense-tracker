@@ -252,6 +252,51 @@ export const useExpenseStore = defineStore('expense', () => {
     const idArray = Array.isArray(ids) ? ids : [ids]
     if (idArray.length === 0) return
 
+    const formatVNDLocal = (v) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v)
+
+    // ── Validation Phase (Simulation) ─────────────────────
+    const jarBalanceSim = {}
+    
+    // Initialize sim balances with current balances
+    jars.value.forEach(j => { jarBalanceSim[j.id] = j.balance })
+
+    for (const id of idArray) {
+      const tx = transactions.value.find(t => t.id === id)
+      if (!tx) continue
+
+      // Case 1: Internal transfer MAIN -> JAR (Refill)
+      if (tx.type === 'internal' && tx.sourceType === 'MAIN' && tx.targetType === 'JAR') {
+        const jar = jars.value.find(j => j.id === tx.targetId)
+        if (!jar) {
+          throw new Error(`Không thể xóa giao dịch "${tx.description}": Hũ liên quan đã bị xóa.`)
+        }
+        if (jarBalanceSim[jar.id] < tx.amount) {
+          throw new Error(`Không thể xóa giao dịch "${tx.description}": Hũ "${jar.name}" không đủ số dư để hoàn trả ${formatVNDLocal(tx.amount)} (Hiện có: ${formatVNDLocal(jarBalanceSim[jar.id])}).`)
+        }
+        jarBalanceSim[jar.id] -= tx.amount
+      }
+
+      // Case 2: Income with auto-allocation
+      if (tx.type === 'income' && allocationSettings.value.enabled && !tx.skipAutoAllocation) {
+        const rules = allocationSettings.value.rules || {}
+        for (const [jarId, percent] of Object.entries(rules)) {
+          const jar = jars.value.find(j => j.id === jarId)
+          if (jar && percent > 0) {
+            const share = Math.round((tx.amount * Number(percent)) / 100)
+            if (jarBalanceSim[jar.id] < share) {
+              throw new Error(`Không thể xóa giao dịch "${tx.description}": Hũ "${jar.name}" không đủ số dư để thu hồi ${formatVNDLocal(share)} đã phân bổ (Hiện có: ${formatVNDLocal(jarBalanceSim[jar.id])}).`)
+            }
+            jarBalanceSim[jar.id] -= share
+          }
+        }
+      }
+      
+      // Note: Expense and Withdrawal deletions increase jar balance, so they don't need validation checks
+      // but if we were perfectly accurate, we'd add those to jarBalanceSim too.
+      // However, simple sequential validation is enough to prevent negative balances.
+    }
+
+    // ── Execution Phase ───────────────────────────────────
     let totalRefundToWallet = 0
 
     for (const id of idArray) {

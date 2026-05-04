@@ -593,3 +593,59 @@ body.theme-black .warning-text strong,
 body.theme-blue .warning-text strong {
   color: #a5b4fc;
 }
+
+/* ── Premium Alert Box ─────────────────────────────────── */
+.premium-alert-box {
+  border-radius: 20px !important;
+  padding: 8px !important;
+  border: 1px solid var(--card-border) !important;
+  background: var(--el-messagebox-bg-color) !important;
+}
+
+.premium-alert-box .el-message-box__header {
+  padding: 24px 24px 12px !important;
+}
+
+.premium-alert-box .el-message-box__title {
+  font-size: 19px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em;
+}
+
+.premium-alert-box .el-message-box__content {
+  padding: 0 24px 20px !important;
+}
+
+.premium-alert-box .el-message-box__btns {
+  padding: 0 24px 24px !important;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.premium-alert-box .el-message-box__btns .el-button--primary {
+  background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 11px 28px !important;
+  height: auto !important;
+  font-weight: 700 !important;
+  font-size: 14.5px !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4) !important;
+  transition: all 0.25s ease !important;
+}
+
+.premium-alert-box .el-message-box__btns .el-button--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(79, 70, 229, 0.55) !important;
+  opacity: 1 !important;
+}
+
+.premium-alert-box .el-message-box__status {
+  display: none !important; /* Hide default icon to use our custom one in HTML */
+}
+
+/* Adjust for dissolved jar alert as well */
+.el-message-box:has(.premium-alert-box) {
+  /* This selector might not work in all browsers, but the customClass handles most */
+}

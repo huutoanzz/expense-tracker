@@ -72,7 +72,9 @@
         <div class="card-body">
           <p class="card-label">Tiết Kiệm</p>
           <p class="card-value">{{ formatVND(displayData.saving) }}</p>
-          <p class="card-sub saving-sub">✅ {{ savingMessage }}</p>
+          <p class="card-sub" :class="displayData.saving >= 0 ? 'saving-sub' : 'expense-sub'">
+            {{ displayData.saving > 0 ? '✅' : (displayData.saving < 0 ? '⚠️' : 'ℹ️') }} {{ savingMessage }}
+          </p>
         </div>
       </div>
 
@@ -341,8 +343,10 @@ const displayData = computed(() => {
 })
 
 const spendingRate = computed(() => {
-  if (!displayData.value.income) return 0
-  return Math.min(100, Math.round((displayData.value.expense / displayData.value.income) * 100))
+  const inc = displayData.value.income
+  const exp = displayData.value.expense
+  if (!inc) return exp > 0 ? 100 : 0
+  return Math.min(100, Math.round((exp / inc) * 100))
 })
 
 const savingMessage = computed(() => {
@@ -354,7 +358,13 @@ const savingMessage = computed(() => {
 
 // ── Health label ─────────────────────────────────────────────
 const healthLabel = computed(() => {
-  if (displayData.value.income === 0 && displayData.value.expense === 0) return 'Chưa có dữ liệu'
+  const inc = displayData.value.income
+  const exp = displayData.value.expense
+  
+  if (inc === 0 && exp === 0) return 'Chưa có dữ liệu'
+  if (inc === 0 && exp > 0) return 'Cần chú ý ❗'
+  if (exp > inc) return 'Báo động 🚨'
+  
   const r = 100 - spendingRate.value
   if (r >= 60) return 'Xuất sắc 🌟'
   if (r >= 40) return 'Khá tốt 👍'
@@ -362,6 +372,12 @@ const healthLabel = computed(() => {
   return 'Cần chú ý ❗'
 })
 const healthClass = computed(() => {
+  const inc = displayData.value.income
+  const exp = displayData.value.expense
+  
+  if (inc === 0 && exp > 0) return 'health-bad'
+  if (exp > inc) return 'health-bad'
+  
   const r = 100 - spendingRate.value
   if (r >= 60) return 'health-excellent'
   if (r >= 40) return 'health-good'
@@ -369,18 +385,31 @@ const healthClass = computed(() => {
   return 'health-bad'
 })
 const healthDesc = computed(() => {
+  const inc = displayData.value.income
+  const exp = displayData.value.expense
   const saved = 100 - spendingRate.value
-  if (displayData.value.income === 0) return 'Bắt đầu ghi chép để theo dõi sức khỏe tài chính'
+
+  if (inc === 0 && exp > 0) return 'Bạn đang chi tiêu khi chưa có thu nhập ghi nhận.'
+  if (exp > inc) return `Cảnh báo: Bạn đang chi vượt thu nhập ${formatVND(exp - inc)}`
+  if (inc === 0) return 'Bắt đầu ghi chép để theo dõi sức khỏe tài chính'
   return `Bạn đang giữ lại ${saved}% thu nhập trong giai đoạn này`
 })
 
 // ── AI Insight ───────────────────────────────────────────────
 const showInsightDetail = ref(false)
 const insightMessage = computed(() => {
-  if (displayData.value.income === 0) return 'Bạn chưa có thu nhập trong kỳ này. Hãy ghi lại các nguồn thu để trợ lý phân tích chính xác hơn.'
-  if (spendingRate.value > 70) return `Tháng này bạn chi đến ${spendingRate.value}% thu nhập — hãy xem lại khoản nào có thể cắt giảm để tiết kiệm thêm.`
-  if (spendingRate.value > 40) return `Bạn đã chi ${spendingRate.value}% thu nhập. Còn tốt — tiếp tục duy trì và thử tăng tiết kiệm thêm 5% nữa nhé!`
-  return `Tuyệt vời! Bạn chỉ chi ${spendingRate.value}% thu nhập. Đây là nền tảng tài chính rất lành mạnh.`
+  const inc = displayData.value.income
+  const exp = displayData.value.expense
+
+  if (inc === 0 && exp > 0) return 'Cảnh báo: Bạn đang phát sinh chi phí khi chưa có nguồn thu. Hãy bổ sung thu nhập để tránh thâm hụt tài chính!'
+  if (inc === 0) return 'Bạn chưa có thu nhập trong kỳ này. Hãy ghi lại các nguồn thu để trợ lý phân tích chính xác hơn.'
+  
+  if (exp > inc) return `Tình hình đang khá nghiêm trọng! Bạn đã chi vượt thu nhập ${formatVND(exp - inc)}. Hãy rà soát ngay các khoản chi không cần thiết.`
+  
+  if (spendingRate.value > 80) return `Tháng này bạn chi đến ${spendingRate.value}% thu nhập. Bạn đang ở ngưỡng nguy hiểm, hãy thắt chặt chi tiêu ngay!`
+  if (spendingRate.value > 60) return `Bạn đã chi ${spendingRate.value}% thu nhập. Mức tiết kiệm đang hơi thấp, hãy thử cắt giảm danh mục "${topCategories.value[0]?.name}" xem sao.`
+  if (spendingRate.value > 40) return `Bạn đã chi ${spendingRate.value}% thu nhập. Mức độ kiểm soát khá ổn, cố gắng duy trì nhé!`
+  return `Tuyệt vời! Bạn chỉ chi ${spendingRate.value}% thu nhập. Đây là nền tảng tài chính cực kỳ lành mạnh.`
 })
 const insightTips = computed(() => {
   const tips = []
@@ -724,6 +753,7 @@ const formatDateShort = d =>
 }
 .card-sub { font-size: 12px; font-weight: 500; }
 .income-sub { color: #10b981; }
+.expense-sub { color: #ef4444; }
 .saving-sub { color: #10b981; }
 .health-sub { color: var(--text-secondary); font-size: 11px; }
 .trend-up   { color: #10b981; }

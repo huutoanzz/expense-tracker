@@ -615,6 +615,7 @@ async function confirmDelete(row) {
         type: 'warning',
         dangerouslyUseHTMLString: true,
         center: false,
+        customClass: 'premium-alert-box'
       }
     )
     return
@@ -638,8 +639,31 @@ async function confirmDelete(row) {
     tableLoading.value = false
 
     ElMessage({ type: 'success', message: 'Đã xóa giao dịch thành công!', duration: 2000 })
-  } catch {
+  } catch (err) {
     tableLoading.value = false
+    if (err && err !== 'cancel' && err !== 'close') {
+      const msg = err.message || 'Có lỗi xảy ra khi xóa giao dịch.'
+      
+      // Hiển thị Dialog premium thay vì thông báo đơn giản
+      ElMessageBox.alert(
+        `<div style="line-height:1.8;font-size:14px">
+          <p>${msg}</p>
+          <p style="margin-top:10px">Hành động này bị chặn để tránh việc số dư hũ bị <b>âm</b>, gây sai lệch báo cáo tài chính của bạn.</p>
+          <div style="margin-top:15px;padding:12px 16px;background:rgba(245,158,11,0.1);border-radius:10px;color:#f59e0b;display:flex;gap:10px;align-items:flex-start">
+            <span style="font-size:18px">⚠️</span>
+            <span><b>Lời khuyên:</b> Hãy kiểm tra lại các khoản chi tiêu từ hũ này hoặc nạp thêm tiền vào hũ trước khi xóa giao dịch nạp tiền này.</span>
+          </div>
+        </div>`,
+        'Không thể xóa giao dịch',
+        {
+          confirmButtonText: 'Đã hiểu',
+          type: 'warning',
+          dangerouslyUseHTMLString: true,
+          center: false,
+          customClass: 'premium-alert-box'
+        }
+      )
+    }
   }
 }
 
@@ -662,7 +686,7 @@ async function confirmDeleteMultiple() {
     tableLoading.value = true
     const ids = selectedRows.value.map(r => r.id)
     
-    await store.deleteTransaction(ids)           // ← quan trọng: dùng cùng hàm deleteTransaction
+    await store.deleteTransaction(ids)
     
     tableLoading.value = false
     selectedRows.value = [] // clear selection
@@ -672,8 +696,29 @@ async function confirmDeleteMultiple() {
       message: `Đã xóa ${ids.length} giao dịch thành công!`, 
       duration: 2000 
     })
-  } catch {
+  } catch (err) {
     tableLoading.value = false
+    if (err && err !== 'cancel' && err !== 'close') {
+      const msg = err.message || 'Có lỗi xảy ra khi xóa hàng loạt.'
+      
+      ElMessageBox.alert(
+        `<div style="line-height:1.8;font-size:14px">
+          <p>${msg}</p>
+          <p style="margin-top:10px">Một hoặc nhiều giao dịch không thể xóa để đảm bảo tính nhất quán của số dư các hũ.</p>
+          <div style="margin-top:15px;padding:12px 16px;background:rgba(245,158,11,0.1);border-radius:10px;color:#f59e0b;display:flex;gap:10px;align-items:flex-start">
+            <span style="font-size:18px">⚠️</span>
+            <span>Vui lòng kiểm tra lại số dư hũ liên quan trước khi thực hiện xóa hàng loạt các giao dịch nạp tiền/thu nhập.</span>
+          </div>
+        </div>`,
+        'Lỗi xóa hàng loạt',
+        {
+          confirmButtonText: 'Đã hiểu',
+          type: 'error',
+          dangerouslyUseHTMLString: true,
+          center: false
+        }
+      )
+    }
   }
 }
 
