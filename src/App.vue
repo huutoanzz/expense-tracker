@@ -15,12 +15,13 @@
       </div>
 
       <nav class="sidebar-nav">
-        <a
+        <router-link
           v-for="item in navItems"
-          :key="item.key"
+          :key="item.path"
+          :to="item.path"
           class="nav-item"
-          :class="{ active: activeTab === item.key }"
-          @click="activeTab = item.key"
+          :class="{ active: $route.path === item.path }"
+          @click="mobileNavOpen = false"
         >
           <el-icon :size="20"><component :is="item.icon" /></el-icon>
           <span v-if="!sidebarCollapsed" class="nav-label">{{ item.label }}</span>
@@ -29,7 +30,7 @@
             :value="item.badge"
             class="nav-badge"
           />
-        </a>
+        </router-link>
       </nav>
 
       <div class="sidebar-footer">
@@ -82,301 +83,28 @@
         </div>
       </header>
 
-      <!-- ── Dashboard Tab ──────────────────────────── -->
-      <section v-if="activeTab === 'dashboard'" class="tab-section animate__animated animate__fadeIn">
-        <DashboardView @navigate="handleNavigate" />
-      </section>
-
-      <!-- ── Jars Tab ─────────────────────────────── -->
-      <section v-if="activeTab === 'jars'" class="tab-section animate__animated animate__fadeIn">
-        <JarDashboard />
-      </section>
-
-      <!-- ── Profile Tab ────────────────────────────── -->
-      <section v-if="activeTab === 'profile'" class="tab-section animate__animated animate__fadeIn">
-        <UserProfile />
-      </section>
-
-      <!-- ── Budget Tab ─────────────────────────────── -->
-      <section v-if="activeTab === 'budget'" class="tab-section animate__animated animate__fadeIn">
-        <BudgetDashboard />
-      </section>
-
-      <!-- ── Transactions Tab ───────────────────────── -->
-      <section v-if="activeTab === 'transactions'" class="tab-section animate__animated animate__fadeIn">
-        <!-- ✅ CẢNH BÁO THEME-FRIENDLY (KHÔNG CAM) -->
-        <div class="delete-warning-card mb-4">
-          <div class="warning-header">
-            <el-icon class="warning-icon"><Warning /></el-icon>
-            <span class="warning-title">Lưu ý khi xóa giao dịch</span>
-          </div>
-          <p class="warning-text">
-            Xóa giao dịch có thể làm sai lệch dòng tiền, 
-            <strong>đặc biệt với giao dịch phức tạp (hũ, phân chia tự động)</strong>.<br>
-            <em>Chỉ dùng để chỉnh sửa đơn giản, không xóa tùy tiện hoặc sai trình tự</em>
-          </p>
-        </div>
-        <!-- Filter Bar -->
-        <div class="filter-bar">
-          <el-input
-            v-model="search"
-            placeholder="Tìm kiếm giao dịch..."
-            clearable
-            size="large"
-            class="search-input"
-          >
-            <template #prefix><el-icon><Search /></el-icon></template>
-          </el-input>
-
-          <el-select
-            v-model="filterType"
-            placeholder="Lọc theo loại"
-            clearable
-            size="large"
-            style="width: 180px"
-          >
-            <el-option label="Tất cả" value="" />
-            <el-option label="Thu nhập" value="income" />
-            <el-option label="Chi tiêu" value="expense" />
-          </el-select>
-
-          <el-select
-            v-model="filterCategory"
-            placeholder="Danh mục"
-            clearable
-            size="large"
-            style="width: 180px"
-          >
-            <el-option label="Tất cả" value="" />
-            <el-option
-              v-for="cat in CATEGORIES"
-              :key="cat.value"
-              :label="cat.label"
-              :value="cat.value"
-            />
-          </el-select>
-        </div>
-
-        <!-- ── Desktop: Table ───────────────────────────────── -->
-        <div class="table-card desktop-only">
-          <div v-auto-animate>
-            <el-table
-              v-loading="tableLoading"
-              element-loading-text="Đang xử lý..."
-              element-loading-background="rgba(0, 0, 0, 0.5)"
-              :data="filteredTransactions"
-              style="width: 100%"
-              empty-text="Không có giao dịch nào"
-              row-key="id"
-              @selection-change="handleSelectionChange"
-            >
-              <el-table-column type="selection" width="55" align="center" />
-
-              <el-table-column label="Danh Mục" width="150" align="center">
-                <template #default="{ row }">
-                  <div
-                    class="cat-icon-wrap"
-                    :style="{ background: getCatColor(row.category) + '22', color: getCatColor(row.category) }"
-                  >
-                    <el-icon :size="16"><component :is="getCatIcon(row.category)" /></el-icon>
-                  </div>
-                </template>
-              </el-table-column>
-
-              <el-table-column label="Mô Tả" prop="description" min-width="180">
-                <template #default="{ row }">
-                  <div class="tx-description">
-                    <span class="tx-name">{{ row.description }}</span>
-                    <span class="tx-cat-label">{{ getCatLabel(row.category) }}</span>
-                  </div>
-                </template>
-              </el-table-column>
-
-              <el-table-column label="Loại" width="140" align="center">
-                <template #default="{ row }">
-                  <el-tag v-if="row.type === 'income'" type="success" size="small" round>↑ Thu nhập</el-tag>
-                  <el-tag v-else-if="row.type === 'expense'" type="danger" size="small" round>↓ Chi tiêu</el-tag>
-                  <el-tag v-else-if="row.type === 'internal'" type="info" size="small" round>⇅ Chuyển nội bộ</el-tag>
-                  <el-tag v-else-if="row.type === 'adjustment'" type="warning" size="small" round>⚖ Điều chỉnh</el-tag>
-                </template>
-              </el-table-column>
-
-              <el-table-column label="Số Tiền" width="180" align="right">
-                <template #default="{ row }">
-                  <span
-                    class="tx-amount"
-                    :class="{
-                      'income-amount': row.type === 'income',
-                      'expense-amount': row.type === 'expense',
-                      'internal-amount': row.type === 'internal',
-                      'adjustment-amount': row.type === 'adjustment'
-                    }"
-                  >
-                    {{ (row.type === 'income' || (row.type === 'internal' && row.targetType === 'JAR')) ? '+' : '-' }}{{ formatVND(row.amount) }}
-                  </span>
-                </template>
-              </el-table-column>
-
-              <el-table-column label="Ngày" width="130" align="center">
-                <template #default="{ row }">
-                  <span class="tx-date">{{ formatDate(row.date) }}</span>
-                </template>
-              </el-table-column>
-
-              <el-table-column label="" width="70" align="center">
-                <template #default="{ row }">
-                  <el-button
-                    type="danger"
-                    size="small"
-                    circle
-                    plain
-                    :disabled="tableLoading"
-                    @click="confirmDelete(row)"
-                  >
-                    <el-icon><Delete /></el-icon>
-                  </el-button>
-                </template>
-              </el-table-column>
-            </el-table>
-          </div>
-
-          <!-- Pagination & Bulk Actions info -->
-          <div class="table-footer">
-            <div class="footer-left">
-              <el-button
-                v-if="selectedRows.length > 0"
-                type="danger"
-                size="small"
-                plain
-                :disabled="tableLoading"
-                @click="confirmDeleteMultiple"
-              >
-                <el-icon class="mr-1"><Delete /></el-icon>
-                Xóa {{ selectedRows.length }} mục đã chọn
-              </el-button>
-            </div>
-            <span class="table-count">
-              Hiển thị <b>{{ filteredTransactions.length }}</b> / {{ store.transactions.length }} giao dịch
-            </span>
-          </div>
-        </div>
-
-        <!-- ── Mobile: Card List ─────────────────────────────── -->
-        <div class="mobile-only">
-          <!-- Summary strip -->
-          <div class="mobile-tx-summary">
-            <div class="mts-item">
-              <span class="mts-label">Tổng</span>
-              <span class="mts-value">{{ filteredTransactions.length }} giao dịch</span>
-            </div>
-            <div class="mts-divider" />
-            <div class="mts-item">
-              <span class="mts-label">Thu</span>
-              <span class="mts-value mts-income">+{{ formatVND(filteredTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)) }}</span>
-            </div>
-            <div class="mts-divider" />
-            <div class="mts-item">
-              <span class="mts-label">Chi</span>
-              <span class="mts-value mts-expense">-{{ formatVND(filteredTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)) }}</span>
-            </div>
-          </div>
-
-          <!-- Card list -->
-          <div class="mobile-tx-list" v-auto-animate>
-            <div
-              v-for="row in filteredTransactions"
-              :key="row.id"
-              class="mobile-tx-card"
-            >
-              <!-- Icon -->
-              <div
-                class="mobile-tx-icon"
-                :style="{ background: getCatColor(row.category) + '22', color: getCatColor(row.category) }"
-              >
-                <el-icon :size="18"><component :is="getCatIcon(row.category)" /></el-icon>
-              </div>
-
-              <!-- Info -->
-              <div class="mobile-tx-info">
-                <p class="mobile-tx-name">{{ row.description }}</p>
-                <div class="mobile-tx-meta">
-                  <span
-                    class="mobile-tx-type-chip"
-                    :class="{
-                      'chip-income': row.type === 'income',
-                      'chip-expense': row.type === 'expense',
-                      'chip-internal': row.type === 'internal',
-                      'chip-adjustment': row.type === 'adjustment',
-                    }"
-                  >
-                    <span v-if="row.type === 'income'">↑ Thu</span>
-                    <span v-else-if="row.type === 'expense'">↓ Chi</span>
-                    <span v-else-if="row.type === 'internal'">⇅ Nội bộ</span>
-                    <span v-else-if="row.type === 'adjustment'">⚖ Điều chỉnh</span>
-                  </span>
-                  <span class="mobile-tx-cat">{{ getCatLabel(row.category) }}</span>
-                  <span class="mobile-tx-dot">·</span>
-                  <span class="mobile-tx-date">{{ formatDate(row.date) }}</span>
-                </div>
-              </div>
-
-              <!-- Right: amount + delete -->
-              <div class="mobile-tx-right">
-                <span
-                  class="mobile-tx-amount"
-                  :class="{
-                    'income-amount': row.type === 'income',
-                    'expense-amount': row.type === 'expense',
-                    'internal-amount': row.type === 'internal',
-                    'adjustment-amount': row.type === 'adjustment',
-                  }"
-                >
-                  {{ (row.type === 'income' || (row.type === 'internal' && row.targetType === 'JAR')) ? '+' : '-' }}{{ formatVND(row.amount) }}
-                </span>
-                <el-button
-                  type="danger"
-                  size="small"
-                  circle
-                  plain
-                  :disabled="tableLoading"
-                  @click="confirmDelete(row)"
-                  class="mobile-tx-delete-btn"
-                >
-                  <el-icon><Delete /></el-icon>
-                </el-button>
-              </div>
-            </div>
-
-            <!-- Empty state -->
-            <div v-if="filteredTransactions.length === 0" class="mobile-tx-empty">
-              <span class="mobile-tx-empty-icon">📭</span>
-              <p>Không có giao dịch nào</p>
-              <p class="mobile-tx-empty-sub">Thử thay đổi bộ lọc hoặc thêm giao dịch mới</p>
-            </div>
-          </div>
-
-          <div class="mobile-tx-footer">
-            Hiển thị <b>{{ filteredTransactions.length }}</b> / {{ store.transactions.length }} giao dịch
-          </div>
-        </div>
+      <!-- ── Router View ──────────────────────────── -->
+      <section class="tab-section animate__animated animate__fadeIn">
+        <router-view @navigate="handleNavigate" />
       </section>
     </main>
 
     <!-- ── Mobile Bottom Navigation ────────────────── -->
     <nav class="mobile-bottom-nav">
-      <a
+      <router-link
         v-for="item in navItems"
-        :key="item.key"
+        :key="item.path"
+        :to="item.path"
         class="bottom-nav-item"
-        :class="{ active: activeTab === item.key }"
-        @click="activeTab = item.key; mobileNavOpen = false"
+        :class="{ active: $route.path === item.path }"
+        @click="mobileNavOpen = false"
       >
         <div class="bottom-nav-icon-wrap">
           <el-icon :size="20"><component :is="item.icon" /></el-icon>
           <span v-if="item.badge" class="bottom-nav-badge">{{ item.badge > 99 ? '99+' : item.badge }}</span>
         </div>
         <span class="bottom-nav-label">{{ item.label }}</span>
-      </a>
+      </router-link>
     </nav>
 
     <!-- ── Settings Dialog ───────────────────────────── -->
@@ -446,14 +174,10 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { vAutoAnimate } from '@formkit/auto-animate/vue'
 import { useExpenseStore, CATEGORIES } from './stores/expenseStore'
-import DashboardView from './components/DashboardView.vue'
 import ExpenseForm from './components/ExpenseForm.vue'
-import UserProfile from './components/UserProfile.vue'
-import JarDashboard from './components/JarDashboard.vue'
-import BudgetDashboard from './components/BudgetDashboard.vue'
 
 const store = useExpenseStore()
 const tableLoading = ref(false)
@@ -477,20 +201,19 @@ function handleSelectionChange(val) {
   selectedRows.value = val
 }
 
+// ── Router ────────────────────────────────────────────────
+const router = useRouter()
+const route  = useRoute()
+
 // ── Sidebar ───────────────────────────────────────────────
 const sidebarCollapsed = ref(false)
-const activeTab = ref('dashboard')
 const mobileNavOpen = ref(false)
 
 function handleNavigate(target) {
   if (typeof target === 'string') {
-    activeTab.value = target
+    router.push({ name: target })
   } else {
-    activeTab.value = target.tab
-    if (target.filter) {
-      filterType.value = target.filter.type || ''
-      filterCategory.value = target.filter.category || ''
-    }
+    router.push({ name: target.tab })
   }
 }
 
@@ -512,48 +235,22 @@ function onTouchEnd(e) {
   if (dx < -60 && mobileNavOpen.value) mobileNavOpen.value = false // swipe left to close
 }
 
-// Close sidebar when tab changes on mobile
-watch(activeTab, () => {
+// Close sidebar when route changes on mobile
+watch(() => route.path, () => {
   if (window.innerWidth <= 768) mobileNavOpen.value = false
 })
 
 const navItems = computed(() => [
-  {
-    key: 'dashboard',
-    label: 'Dashboard',
-    icon: 'DataBoard',
-  },
-  {
-    key: 'budget',
-    label: 'Ngân Sách',
-    icon: 'PieChart',
-  },
-  {
-    key: 'jars',
-    label: 'Hũ Chi Tiêu',
-    icon: 'Wallet',
-  },
-  {
-    key: 'transactions',
-    label: 'Giao Dịch',
-    icon: 'List',
-    badge: store.transactions.length,
-  },
-  {
-    key: 'profile',
-    label: 'Cá Nhân',
-    icon: 'User',
-  },
+  { path: '/dashboard',    label: 'Dashboard',    icon: 'DataBoard' },
+  { path: '/budget',       label: 'Ngân Sách',    icon: 'PieChart'  },
+  { path: '/jars',         label: 'Hũ Chi Tiêu',  icon: 'Wallet'    },
+  { path: '/transactions', label: 'Giao Dịch',    icon: 'List', badge: store.transactions.length },
+  { path: '/profile',      label: 'Cá Nhân',      icon: 'User'      },
 ])
 
-const pageMap = {
-  dashboard: { title: 'Dashboard', subtitle: 'Tổng quan tài chính của bạn' },
-  jars: { title: 'Hũ Chi Tiêu', subtitle: 'Quản lý ngân sách thông minh' },
-  budget: { title: 'Ngân Sách', subtitle: 'Gợi ý phân bổ theo quy tắc 50/30/20' },
-  transactions: { title: 'Giao Dịch', subtitle: 'Quản lý thu chi chi tiết' },
-  profile: { title: 'Profile', subtitle: 'Quản lý tài khoản của bạn' },
-}
-const currentPage = computed(() => pageMap[activeTab.value])
+const currentPage = computed(() => {
+  return route.meta || { title: 'Dashboard', subtitle: 'Tổng quan tài chính của bạn' }
+})
 
 // ── Date ──────────────────────────────────────────────────
 const formattedDate = computed(() => {
@@ -565,42 +262,9 @@ const formattedDate = computed(() => {
   }).format(new Date())
 })
 
-// ── Filters ───────────────────────────────────────────────
-const search = ref('')
-const filterType = ref('')
-const filterCategory = ref('')
 
-const filteredTransactions = computed(() => {
-  return store.transactions
-    .filter(t => {
-      const matchSearch = t.description.toLowerCase().includes(search.value.toLowerCase())
-      const matchType = filterType.value ? t.type === filterType.value : true
-      const matchCat = filterCategory.value ? t.category === filterCategory.value : true
-      return matchSearch && matchType && matchCat
-    })
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
-})
-
-// ── Category helpers ─────────────────────────────────────
-function getCatInfo(categoryValue) {
-  return CATEGORIES.find(c => c.value === categoryValue) ?? CATEGORIES[CATEGORIES.length - 1]
-}
-const getCatIcon = (v) => getCatInfo(v).icon
-const getCatColor = (v) => getCatInfo(v).color
-const getCatLabel = (v) => getCatInfo(v).label
-
-// ── Formatters ────────────────────────────────────────────
-const formatVND = (value) =>
-  new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value)
-
-const formatDate = (dateStr) =>
-  new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(dateStr))
-
-// ── Table row class ───────────────────────────────────────
-const rowClass = ({ row }) => (row.type === 'income' ? 'income-row' : 'expense-row')
-
-// ── Delete ────────────────────────────────────────────────
-// ── Helper: kiem tra giao dich co lien quan hu da giai the khong ──
+// ── (Delete logic moved to TransactionList.vue) ──────────
+// ──
 // Tra ve ten hu (string) neu giai the, null neu ok
 function getDissolvedJarName(row) {
   // Chỉ khoá các giao dịch INTERNAL của hũ đã giải thể.

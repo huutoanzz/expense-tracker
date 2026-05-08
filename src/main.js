@@ -6,11 +6,13 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import 'animate.css'
 import './style.css'
 import App from './App.vue'
+import router from './router/index.js'
 
 const app = createApp(App)
 const pinia = createPinia()
 
 app.use(pinia)
+app.use(router)
 app.use(ElementPlus)
 
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
@@ -18,3 +20,4 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 }
 
 app.mount('#app')
+
