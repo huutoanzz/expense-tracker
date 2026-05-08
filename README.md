@@ -10,6 +10,19 @@
 
 ---
 
+## 📸 Giao diện ứng dụng
+
+### 📊 Dashboard Tổng Quan
+![Dashboard](docs/screenshots/dashboard.png)
+
+### 🏺 Quản Lý Hũ Chi Tiêu
+![Jars](docs/screenshots/jars.png)
+
+### 📝 Danh Sách Giao Dịch
+![Transactions](docs/screenshots/transactions.png)
+
+---
+
 ## 📖 Giới thiệu
 
 **Smart Expense Tracker** là ứng dụng quản lý tài chính cá nhân hiện đại được xây dựng bằng **Vue 3 + Vite**. Với giao diện **Dark/Blue/White Mode** sang trọng, hiệu ứng chuyển động mượt mà, biểu đồ phân tích sâu và hệ thống phân bổ ngân sách thông minh, ứng dụng mang lại trải nghiệm quản lý tài chính cao cấp ngay trên trình duyệt.
