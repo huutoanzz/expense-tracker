@@ -10,16 +10,16 @@
 
 ---
 
-## 📸 Demo & Giao diện ứng dụng
+## 📸 Giao diện ứng dụng
 
-### 🎨 Đổi chủ đề linh hoạt (White/Blue/Black)
-![Theme Switch](docs/screenshots/theme_switch.webp)
+### 📊 Dashboard Tổng Quan
+![Dashboard](docs/screenshots/dashboard.png)
 
-### 📱 Trải nghiệm Mobile mượt mà
-![Mobile UI](docs/screenshots/mobile_ui.webp)
+### 🏺 Quản Lý Hũ Chi Tiêu
+![Jars](docs/screenshots/jars.png)
 
-### 💸 Quản lý giao dịch thông minh
-![Transactions Demo](docs/screenshots/transactions_demo.webp)
+### 📝 Danh Sách Giao Dịch
+![Transactions](docs/screenshots/transactions.png)
 
 ---
 
@@ -74,7 +74,7 @@
 |---|---|
 | **Framework** | [Vue 3](https://vuejs.org/) (Composition API + `<script setup>`) |
 | **Build Tool** | [Vite 7](https://vitejs.dev/) |
-| **Routing** | [Vue Router 4](https://router.vuejs.org/) (Web History) |
+| **Routing** | [Vue Router 4](https://router.vuejs.org/) (Hash History) |
 | **State Management** | [Pinia 3](https://pinia.vuejs.org/) |
 | **UI Components** | [Element Plus 2](https://element-plus.org/) |
 | **Styling** | [Tailwind CSS 4](https://tailwindcss.com/) + Vanilla CSS |
