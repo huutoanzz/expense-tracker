@@ -78,7 +78,7 @@
   <img 
     src="docs/screenshots/mobile_demo.webp"
     alt="Mobile Demo"
-    width="700"
+    width="1400"
   />
 </div>
 
