@@ -10,7 +10,12 @@
 
 ---
 
-## 📸 Giao diện ứng dụng
+## 📸 Giao diện & Trải nghiệm
+
+### 📱 Trải nghiệm mượt mà trên Mobile (Vuốt & Điều hướng)
+<div align="center">
+  <img src="docs/screenshots/mobile_demo.webp" width="300" alt="Mobile Demo" />
+</div>
 
 ### 📊 Dashboard Tổng Quan
 ![Dashboard](docs/screenshots/dashboard.png)
