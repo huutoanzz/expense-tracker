@@ -77,8 +77,21 @@
             <p class="page-subtitle">{{ currentPage.subtitle }}</p>
           </div>
         </div>
+
+        <div class="global-wallet-widget animate__animated animate__fadeInDown">
+          <div class="gww-left">
+            <div class="gww-icon">
+              <el-icon><Wallet /></el-icon>
+            </div>
+            <div class="gww-info">
+              <span class="gww-label">Ví chính</span>
+              <span class="gww-value">{{ formatVND(store.walletBalance) }}</span>
+            </div>
+          </div>
+        </div>
+
         <div class="topbar-right">
-          <span class="current-date">{{ formattedDate }}</span>
+          <span class="current-date desktop-only">{{ formattedDate }}</span>
           <ExpenseForm />
         </div>
       </header>
@@ -262,6 +275,10 @@ const formattedDate = computed(() => {
   }).format(new Date())
 })
 
+
+// ── Formatters ────────────────────────────────────────────
+const formatVND = (value) =>
+  new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value)
 
 // ── (Delete logic moved to TransactionList.vue) ──────────
 // ──
@@ -720,6 +737,94 @@ async function handleResetDefault() {
   flex-wrap: wrap;
 }
 
+/* ── Global Wallet Widget (Theme Adaptive Premium Design) ──────────────── */
+.global-wallet-widget {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 8px 20px 8px 12px;
+  border-radius: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-primary);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  cursor: default;
+}
+.global-wallet-widget::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -150%;
+  width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  transform: skewX(-20deg);
+  animation: wallet-shine 6s infinite ease-in-out;
+  z-index: 1;
+}
+body.theme-black .global-wallet-widget::after {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+}
+@keyframes wallet-shine {
+  0% { left: -150%; }
+  20% { left: 200%; }
+  100% { left: 200%; }
+}
+.global-wallet-widget:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 28px rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+.gww-left {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.gww-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(59,130,246,0.1));
+  color: #6366f1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  border: 1px solid rgba(99,102,241,0.2);
+  transition: all 0.3s ease;
+}
+.global-wallet-widget:hover .gww-icon {
+  background: linear-gradient(135deg, #6366f1, #3b82f6);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+  border-color: transparent;
+}
+.gww-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.gww-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.gww-value {
+  font-size: 17px;
+  font-weight: 800;
+  color: #6366f1;
+  background: linear-gradient(135deg, #6366f1, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.2;
+  letter-spacing: -0.3px;
+}
+
 .mobile-menu-btn {
   display: none;
   background: none;
@@ -1063,9 +1168,33 @@ async function handleResetDefault() {
     padding: 12px 16px;
     gap: 10px;
   }
+  .topbar-left {
+    flex: 1;
+  }
   .topbar-right {
     gap: 10px;
   }
+  
+  .global-wallet-widget {
+    order: 3;
+    width: 100%;
+    margin-top: 8px;
+    padding: 12px 20px;
+    border-radius: 18px;
+    justify-content: space-between;
+  }
+  .gww-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 24px;
+  }
+  .gww-label {
+    font-size: 12px;
+  }
+  .gww-value {
+    font-size: 20px;
+  }
+  
   .current-date { display: none; }
   .page-title { font-size: 17px; }
   .page-subtitle { display: none; }

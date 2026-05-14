@@ -2,16 +2,7 @@
   <div class="jar-dashboard">
     <div class="dashboard-header mb-6">
       <div class="main-stats">
-        <div class="stat-card wallet-stat animate__animated animate__fadeInLeft">
-          <div class="stat-icon wallet-icon">
-            <el-icon :size="22"><Wallet /></el-icon>
-          </div>
-          <div class="stat-info">
-            <span class="stat-label">Ví chính</span>
-            <span class="stat-value">{{ formatVND(store.walletBalance) }}</span>
-          </div>
-          <div class="stat-glow" style="background:#10b981"></div>
-        </div>
+
         <div class="stat-card jars-stat animate__animated animate__fadeInLeft" style="animation-delay:0.1s">
           <div class="stat-icon jars-icon">
             <el-icon :size="22"><Money /></el-icon>
@@ -410,16 +401,14 @@ function saveJar() {
   position: relative; background: var(--card-bg);
   border: 1px solid var(--card-border); border-radius: 20px;
   padding: 16px 24px; display: flex; align-items: center;
-  gap: 16px; min-width: 260px; overflow: hidden;
+  gap: 16px; min-width: 260px; overflow: hidden; flex: 1;
 }
-.wallet-stat { border-left: 4px solid #10b981; }
 .jars-stat   { border-left: 4px solid #f59e0b; }
 
 .stat-icon {
   width: 44px; height: 44px; border-radius: 12px;
   display: flex; align-items: center; justify-content: center; font-size: 22px;
 }
-.wallet-icon { background: rgba(16,185,129,0.12); color: #10b981; }
 .jars-icon   { background: rgba(245,158,11,0.12);  color: #f59e0b; }
 
 .stat-info { display: flex; flex-direction: column; }
