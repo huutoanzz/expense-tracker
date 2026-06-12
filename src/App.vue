@@ -1,187 +1,218 @@
 <template>
   <div class="app-layout" @touchstart="onTouchStart" @touchend="onTouchEnd">
-    <!-- ── Mobile overlay backdrop ──────────────────── -->
-    <div
-      class="mobile-overlay"
-      :class="{ visible: mobileNavOpen }"
-      @click="mobileNavOpen = false"
-    />
+    <template v-if="store.user">
+      <!-- ── Mobile overlay backdrop ──────────────────── -->
+      <div
+        class="mobile-overlay"
+        :class="{ visible: mobileNavOpen }"
+        @click="mobileNavOpen = false"
+      />
 
-    <!-- ── Sidebar ───────────────────────────────────── -->
-    <aside class="sidebar" :class="{ collapsed: sidebarCollapsed, 'mobile-open': mobileNavOpen }">
-      <div class="sidebar-logo">
-        <el-icon :size="28" class="logo-icon"><Wallet /></el-icon>
-        <span v-if="!sidebarCollapsed" class="logo-text">SmartExpense</span>
-      </div>
+      <!-- ── Sidebar ───────────────────────────────────── -->
+      <aside class="sidebar" :class="{ collapsed: sidebarCollapsed, 'mobile-open': mobileNavOpen }">
+        <div class="sidebar-logo">
+          <el-icon :size="28" class="logo-icon"><Wallet /></el-icon>
+          <span v-if="!sidebarCollapsed" class="logo-text">SmartExpense</span>
+        </div>
 
-      <nav class="sidebar-nav">
+        <nav class="sidebar-nav">
+          <router-link
+            v-for="item in navItems"
+            :key="item.path"
+            :to="item.path"
+            class="nav-item"
+            :class="{ active: $route.path === item.path }"
+            @click="mobileNavOpen = false"
+          >
+            <el-icon :size="20"><component :is="item.icon" /></el-icon>
+            <span v-if="!sidebarCollapsed" class="nav-label">{{ item.label }}</span>
+            <el-badge
+              v-if="item.badge && !sidebarCollapsed"
+              :value="item.badge"
+              class="nav-badge"
+            />
+          </router-link>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="footer-actions">
+            <el-button 
+              class="footer-icon-btn side-btn" 
+              title="Thu gọn"
+              @click="sidebarCollapsed = !sidebarCollapsed"
+            >
+              <el-icon :size="16">
+                <component :is="sidebarCollapsed ? 'ArrowRight' : 'ArrowLeft'" />
+              </el-icon>
+            </el-button>
+
+            <el-button 
+              class="footer-icon-btn main-settings-btn" 
+              title="Cài đặt"
+              @click="settingsVisible = true"
+            >
+              <el-icon :size="20"><Setting /></el-icon>
+            </el-button>
+
+            <el-button 
+              class="footer-icon-btn side-btn feedback-btn" 
+              title="Góp ý & Liên hệ"
+              @click="handleContact"
+            >
+              <el-icon :size="18"><ChatDotRound /></el-icon>
+            </el-button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ── Main Content ──────────────────────────────── -->
+      <main class="main-content">
+        <!-- Top Bar -->
+        <header class="topbar">
+          <div class="topbar-left">
+            <button class="mobile-menu-btn" @click="mobileNavOpen = !mobileNavOpen">
+              <el-icon :size="22"><Menu /></el-icon>
+            </button>
+            <div class="page-info">
+              <h1 class="page-title">{{ currentPage.title }}</h1>
+              <p class="page-subtitle">{{ currentPage.subtitle }}</p>
+            </div>
+          </div>
+
+          <div class="global-wallet-widget animate__animated animate__fadeInDown">
+            <div class="gww-left">
+              <div class="gww-icon">
+                <el-icon><Wallet /></el-icon>
+              </div>
+              <div class="gww-info">
+                <span class="gww-label">Ví chính</span>
+                <span class="gww-value">{{ formatVND(store.walletBalance) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="topbar-right">
+            <span class="current-date desktop-only">{{ formattedDate }}</span>
+
+            <!-- User Dropdown (Premium widget) -->
+            <el-dropdown trigger="click" @command="handleUserCommand" class="topbar-user-dropdown">
+              <div class="topbar-user-profile">
+                <el-avatar 
+                  :size="36" 
+                  :src="store.userProfile.avatarUrl || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'"
+                  class="user-avatar"
+                />
+                <span class="user-name desktop-only">{{ store.userProfile.name || 'Người dùng' }}</span>
+              </div>
+              <template #dropdown>
+                <el-dropdown-menu class="user-dropdown-menu">
+                  <el-dropdown-item command="profile">
+                    <el-icon><User /></el-icon>&nbsp; Trang cá nhân
+                  </el-dropdown-item>
+                  <el-dropdown-item command="logout" divided style="color: #f56c6c;">
+                    <el-icon><SwitchButton /></el-icon>&nbsp; Đăng xuất
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+
+            <ExpenseForm />
+          </div>
+        </header>
+
+        <!-- ── Router View ──────────────────────────── -->
+        <section class="tab-section animate__animated animate__fadeIn">
+          <router-view @navigate="handleNavigate" />
+        </section>
+      </main>
+
+      <!-- ── Mobile Bottom Navigation ────────────────── -->
+      <nav class="mobile-bottom-nav">
         <router-link
           v-for="item in navItems"
           :key="item.path"
           :to="item.path"
-          class="nav-item"
+          class="bottom-nav-item"
           :class="{ active: $route.path === item.path }"
           @click="mobileNavOpen = false"
         >
-          <el-icon :size="20"><component :is="item.icon" /></el-icon>
-          <span v-if="!sidebarCollapsed" class="nav-label">{{ item.label }}</span>
-          <el-badge
-            v-if="item.badge && !sidebarCollapsed"
-            :value="item.badge"
-            class="nav-badge"
-          />
+          <div class="bottom-nav-icon-wrap">
+            <el-icon :size="20"><component :is="item.icon" /></el-icon>
+            <span v-if="item.badge" class="bottom-nav-badge">{{ item.badge > 99 ? '99+' : item.badge }}</span>
+          </div>
+          <span class="bottom-nav-label">{{ item.label }}</span>
         </router-link>
       </nav>
 
-      <div class="sidebar-footer">
-        <div class="footer-actions">
-          <el-button 
-            class="footer-icon-btn side-btn" 
-            title="Thu gọn"
-            @click="sidebarCollapsed = !sidebarCollapsed"
-          >
-            <el-icon :size="16">
-              <component :is="sidebarCollapsed ? 'ArrowRight' : 'ArrowLeft'" />
-            </el-icon>
-          </el-button>
-
-          <el-button 
-            class="footer-icon-btn main-settings-btn" 
-            title="Cài đặt"
-            @click="settingsVisible = true"
-          >
-            <el-icon :size="20"><Setting /></el-icon>
-          </el-button>
-
-          <el-button 
-            class="footer-icon-btn side-btn feedback-btn" 
-            title="Góp ý & Liên hệ"
-            @click="handleContact"
-          >
-            <el-icon :size="18"><ChatDotRound /></el-icon>
-          </el-button>
-        </div>
-      </div>
-    </aside>
-
-    <!-- ── Main Content ──────────────────────────────── -->
-    <main class="main-content">
-      <!-- Top Bar -->
-      <header class="topbar">
-        <div class="topbar-left">
-          <button class="mobile-menu-btn" @click="mobileNavOpen = !mobileNavOpen">
-            <el-icon :size="22"><Menu /></el-icon>
-          </button>
-          <div class="page-info">
-            <h1 class="page-title">{{ currentPage.title }}</h1>
-            <p class="page-subtitle">{{ currentPage.subtitle }}</p>
-          </div>
-        </div>
-
-        <div class="global-wallet-widget animate__animated animate__fadeInDown">
-          <div class="gww-left">
-            <div class="gww-icon">
-              <el-icon><Wallet /></el-icon>
-            </div>
-            <div class="gww-info">
-              <span class="gww-label">Ví chính</span>
-              <span class="gww-value">{{ formatVND(store.walletBalance) }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="topbar-right">
-          <span class="current-date desktop-only">{{ formattedDate }}</span>
-          <ExpenseForm />
-        </div>
-      </header>
-
-      <!-- ── Router View ──────────────────────────── -->
-      <section class="tab-section animate__animated animate__fadeIn">
-        <router-view @navigate="handleNavigate" />
-      </section>
-    </main>
-
-    <!-- ── Mobile Bottom Navigation ────────────────── -->
-    <nav class="mobile-bottom-nav">
-      <router-link
-        v-for="item in navItems"
-        :key="item.path"
-        :to="item.path"
-        class="bottom-nav-item"
-        :class="{ active: $route.path === item.path }"
-        @click="mobileNavOpen = false"
+      <!-- ── Settings Dialog ───────────────────────────── -->
+      <el-dialog
+        v-model="settingsVisible"
+        title="Cài Đặt Hệ Thống"
+        width="440px"
+        center
+        destroy-on-close
+        class="settings-dialog"
       >
-        <div class="bottom-nav-icon-wrap">
-          <el-icon :size="20"><component :is="item.icon" /></el-icon>
-          <span v-if="item.badge" class="bottom-nav-badge">{{ item.badge > 99 ? '99+' : item.badge }}</span>
-        </div>
-        <span class="bottom-nav-label">{{ item.label }}</span>
-      </router-link>
-    </nav>
-
-    <!-- ── Settings Dialog ───────────────────────────── -->
-    <el-dialog
-      v-model="settingsVisible"
-      title="Cài Đặt Hệ Thống"
-      width="440px"
-      center
-      destroy-on-close
-      class="settings-dialog"
-    >
-      <div class="settings-content">
-        <!-- Interface Section -->
-        <div class="settings-section mb-6">
-          <h3 class="section-title">Giao Diện</h3>
-          <p class="section-desc">Chọn phong cách màu sắc phù hợp với bạn.</p>
-          
-          <div class="theme-options">
-            <div
-              v-for="t in [
-                { key: 'white', label: 'Sáng', icon: 'Sunny' },
-                { key: 'blue', label: 'Xanh', icon: 'Cloudy' },
-                { key: 'black', label: 'Tối', icon: 'Moon' }
-              ]"
-              :key="t.key"
-              class="theme-option"
-              :class="[t.key, { active: store.theme === t.key }]"
-              @click="store.setTheme(t.key)"
-            >
-              <div class="theme-preview">
-                <el-icon><component :is="t.icon" /></el-icon>
+        <div class="settings-content">
+          <!-- Interface Section -->
+          <div class="settings-section mb-6">
+            <h3 class="section-title">Giao Diện</h3>
+            <p class="section-desc">Chọn phong cách màu sắc phù hợp với bạn.</p>
+            
+            <div class="theme-options">
+              <div
+                v-for="t in [
+                  { key: 'white', label: 'Sáng', icon: 'Sunny' },
+                  { key: 'blue', label: 'Xanh', icon: 'Cloudy' },
+                  { key: 'black', label: 'Tối', icon: 'Moon' }
+                ]"
+                :key="t.key"
+                class="theme-option"
+                :class="[t.key, { active: store.theme === t.key }]"
+                @click="store.setTheme(t.key)"
+              >
+                <div class="theme-preview">
+                  <el-icon><component :is="t.icon" /></el-icon>
+                </div>
+                <span class="theme-label">{{ t.label }}</span>
               </div>
-              <span class="theme-label">{{ t.label }}</span>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3 class="section-title">Quản Lý Dữ Liệu</h3>
+            <p class="section-desc">Các thao tác này sẽ ảnh hưởng trực tiếp đến dữ liệu của bạn.</p>
+            
+            <div class="settings-actions">
+              <el-button
+                type="danger"
+                plain
+                class="action-btn mb-3"
+                @click="handleClearData"
+              >
+                <el-icon><Delete /></el-icon>&nbsp;
+                Xóa Tất Cả Giao Dịch
+              </el-button>
+              
+              <el-button
+                type="danger"
+                class="action-btn"
+                @click="handleResetDefault"
+              >
+                <el-icon><RefreshLeft /></el-icon>&nbsp;
+                Đặt Lại Mặc Định
+              </el-button>
             </div>
           </div>
         </div>
-
-        <div class="settings-section">
-          <h3 class="section-title">Quản Lý Dữ Liệu</h3>
-          <p class="section-desc">Các thao tác này sẽ ảnh hưởng trực tiếp đến dữ liệu của bạn.</p>
-          
-          <div class="settings-actions">
-            <el-button
-              type="danger"
-              plain
-              class="action-btn mb-3"
-              @click="handleClearData"
-            >
-              <el-icon><Delete /></el-icon>&nbsp;
-              Xóa Tất Cả Giao Dịch
-            </el-button>
-            
-            <el-button
-              type="danger"
-              class="action-btn"
-              @click="handleResetDefault"
-            >
-              <el-icon><RefreshLeft /></el-icon>&nbsp;
-              Đặt Lại Mặc Định
-            </el-button>
-          </div>
-        </div>
+      </el-dialog>
+    </template>
+    
+    <template v-else>
+      <div style="width: 100%; height: 100vh;">
+        <router-view />
       </div>
-    </el-dialog>
+    </template>
   </div>
 </template>
 
@@ -227,6 +258,26 @@ function handleNavigate(target) {
     router.push({ name: target })
   } else {
     router.push({ name: target.tab })
+  }
+}
+
+function handleUserCommand(command) {
+  if (command === 'profile') {
+    router.push({ name: 'profile' })
+  } else if (command === 'logout') {
+    ElMessageBox.confirm(
+      'Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?',
+      'Đăng Xuất',
+      {
+        confirmButtonText: 'Đăng xuất',
+        cancelButtonText: 'Hủy',
+        type: 'warning'
+      }
+    ).then(async () => {
+      await store.logout()
+      ElMessage({ type: 'success', message: 'Đăng xuất thành công!' })
+      router.push({ name: 'login' })
+    }).catch(() => {})
   }
 }
 
@@ -1329,5 +1380,34 @@ body.theme-black .global-wallet-widget::after {
   .bottom-nav-label { display: none; }
   .bottom-nav-item { justify-content: center; padding: 8px 4px; }
   .topbar { padding: 10px 12px; }
+}
+
+/* ── Topbar User Dropdown ───────────────────────────────── */
+.topbar-user-profile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 12px;
+  transition: all 0.25s;
+}
+.topbar-user-profile:hover {
+  background: rgba(99, 102, 241, 0.08);
+}
+.user-avatar {
+  border: 2px solid #6366f1;
+}
+.user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+:deep(.user-dropdown-menu .el-dropdown-menu__item) {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
 }
 </style>

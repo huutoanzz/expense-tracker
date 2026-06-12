@@ -138,16 +138,26 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
+// ── Props ──────────────────────────────────────────────────
+const props = defineProps({
+  userId: {
+    type: String,
+    default: null
+  }
+})
+
 // ── Cloudinary ─────────────────────────────────────────────
-const CLOUD_NAME    = 'dgrxajiru'
-const UPLOAD_PRESET = 'avatar_upload_expense_tracker'
+const CLOUD_NAME    = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dgrxajiru'
+const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'avatar_upload_expense_tracker'
 const UPLOAD_URL    = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`
 
-// ── Storage key ────────────────────────────────────────────
-const STORAGE_KEY = 'imgup_gallery'
+// ── Storage key per user ────────────────────────────────────
+const storageKey = computed(() =>
+  props.userId ? `imgup_gallery_${props.userId}` : null
+)
 
 // ── State ─────────────────────────────────────────────────
 const images       = ref([])   // { id, url, name, uploadedAt }
@@ -167,14 +177,28 @@ const lightboxIndex = computed(() =>
 
 // ── Persistence ────────────────────────────────────────────
 function persist() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(images.value)) } catch {}
+  if (!storageKey.value) return
+  try { localStorage.setItem(storageKey.value, JSON.stringify(images.value)) } catch {}
 }
 
-onMounted(() => {
+function loadImages() {
+  if (!storageKey.value) return
   try {
-    const saved = localStorage.getItem(STORAGE_KEY)
+    const saved = localStorage.getItem(storageKey.value)
     if (saved) images.value = JSON.parse(saved)
-  } catch {}
+    else images.value = []
+  } catch {
+    images.value = []
+  }
+}
+
+onMounted(() => loadImages())
+
+// Reload when userId changes
+watch(() => props.userId, () => {
+  images.value = []
+  queue.value = []
+  loadImages()
 })
 
 // ── Sheet / picker ─────────────────────────────────────────
@@ -238,6 +262,10 @@ async function uploadOne(item) {
     const formData = new FormData()
     formData.append('file', item.file)
     formData.append('upload_preset', UPLOAD_PRESET)
+    // Upload vào folder riêng theo userId để phân biệt ảnh giữa các user
+    if (props.userId) {
+      formData.append('folder', `expense_tracker/${props.userId}/gallery`)
+    }
 
     const response = await fetch(UPLOAD_URL, { method: 'POST', body: formData })
     clearInterval(progressTimer)
