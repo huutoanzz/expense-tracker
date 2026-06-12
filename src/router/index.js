@@ -5,8 +5,6 @@ import BudgetDashboard from '../components/BudgetDashboard.vue'
 import JarDashboard from '../components/JarDashboard.vue'
 import TransactionList from '../components/TransactionList.vue'
 import UserProfile from '../components/UserProfile.vue'
-import LoginView from '../components/LoginView.vue'
-import { useExpenseStore } from '../stores/expenseStore'
 
 const routes = [
   {
@@ -68,18 +66,6 @@ const routes = [
       label: 'Cá Nhân',
     },
   },
-  {
-    path: '/login',
-    name: 'login',
-    component: LoginView,
-    meta: {
-      title: 'Đăng Nhập',
-      subtitle: 'Quản lý tài khoản SmartExpense',
-      icon: 'Lock',
-      label: 'Đăng Nhập',
-      isPublic: true,
-    },
-  },
 ]
 
 const router = createRouter({
@@ -87,34 +73,4 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach(async (to, from, next) => {
-  const store = useExpenseStore()
-  
-  // Chờ cho đến khi kiểm tra xong trạng thái đăng nhập từ Supabase
-  if (store.authLoading) {
-    try {
-      await store.checkAuthPromise
-    } catch (e) {
-      console.error('Error waiting for auth check:', e)
-    }
-  }
-
-  const isAuthenticated = !!store.user
-
-  if (to.meta.isPublic) {
-    if (isAuthenticated && to.name === 'login') {
-      next({ name: 'dashboard' })
-    } else {
-      next()
-    }
-  } else {
-    if (!isAuthenticated) {
-      next({ name: 'login' })
-    } else {
-      next()
-    }
-  }
-})
-
 export default router
-

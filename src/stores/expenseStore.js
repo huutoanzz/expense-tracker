@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { supabase, hasSupabaseConfig } from '../services/supabase'
 
 export const CATEGORIES = [
   { label: 'Ăn uống', value: 'food', icon: 'Food', color: '#f97316' },
@@ -111,360 +110,56 @@ const SEED_DATA = [
   { id: '10', description: 'Coffee & ăn sáng', amount: 85000, type: 'expense', category: 'food', date: '2026-04-14' },
 ]
 
-// Mapping DB Helpers
-function mapTxFromDb(row) {
-  return {
-    id: row.id,
-    description: row.description,
-    amount: Number(row.amount),
-    type: row.type,
-    category: row.category,
-    date: row.date,
-    sourceType: row.source_type,
-    targetType: row.target_type,
-    targetId: row.target_id,
-    sourceId: row.source_id,
-    isInternal: row.is_internal,
-    skipAutoAllocation: row.skip_auto_allocation,
-    sourceBreakdown: row.source_breakdown,
-  }
-}
-
-function mapTxToDb(tx, userId) {
-  return {
-    id: tx.id,
-    user_id: userId,
-    description: tx.description,
-    amount: tx.amount,
-    type: tx.type,
-    category: tx.category,
-    date: tx.date,
-    source_type: tx.sourceType || null,
-    target_type: tx.targetType || null,
-    target_id: tx.targetId || null,
-    source_id: tx.sourceId || null,
-    is_internal: tx.isInternal || false,
-    skip_auto_allocation: tx.skipAutoAllocation || false,
-    source_breakdown: tx.sourceBreakdown || null,
-  }
-}
-
-function mapJarFromDb(row) {
-  return {
-    id: row.id,
-    name: row.name,
-    icon: row.icon,
-    color: row.color,
-    balance: Number(row.balance),
-    limit: Number(row.limit),
-    milestones: row.milestones || [50, 80, 100],
-    categoryValue: row.category_value,
-  }
-}
-
-function mapJarToDb(jar, userId) {
-  return {
-    id: jar.id,
-    user_id: userId,
-    name: jar.name,
-    icon: jar.icon,
-    color: jar.color,
-    balance: jar.balance,
-    limit: jar.limit,
-    milestones: jar.milestones,
-    category_value: jar.categoryValue,
-  }
-}
-
 export const useExpenseStore = defineStore('expense', () => {
-  // Auth states
-  const user = ref(null)
-  const authLoading = ref(hasSupabaseConfig)
-  let checkAuthResolve
-  const checkAuthPromise = new Promise((resolve) => {
-    checkAuthResolve = resolve
-  })
+  const isFirstVisit = !localStorage.getItem('expense_tracker_initialized_v2')
+  const transactions = ref(loadFromStorage() ?? (isFirstVisit ? SEED_DATA : []))
+  const jars = ref(loadJarsFromStorage() ?? CATEGORIES.filter(c => c.value !== 'income').map(c => ({
+    id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+    name: `Hũ ${c.label}`,
+    icon: c.icon,
+    color: c.color,
+    balance: 0,
+    limit: 5000000,
+    milestones: [50, 80, 100],
+    categoryValue: c.value
+  })))
 
-  // Data states
-  const transactions = ref([])
-  const jars = ref([])
-  const walletBalance = ref(0)
-  const allocationSettings = ref({ enabled: false, rules: {} })
-  const userProfile = ref({ name: '', email: '', company: '', location: '', website: '', socialLinks: [] })
-  const theme = ref('black')
+  const walletBalance = ref(loadWalletBalance() ?? 0)
+  const allocationSettings = ref(loadAllocationSettings())
+  const userProfile = ref(loadProfileFromStorage())
+  const theme = ref(loadThemeFromStorage())
 
-  // ── Database Sync Helpers ───────────────────────────────
-  async function dbSaveTransaction(tx) {
-    if (!supabase || !user.value || user.value.id === 'demo-user') return
-    await supabase.from('transactions').upsert(mapTxToDb(tx, user.value.id))
+  if (isFirstVisit) {
+    migrateData()
+    saveToStorage(transactions.value)
+    saveJarsToStorage(jars.value)
+    saveWalletToStorage(walletBalance.value)
+    localStorage.setItem('expense_tracker_initialized_v2', 'true')
+    localStorage.setItem('expense_tracker_initialized', 'true')
   }
 
-  async function dbDeleteTransactions(ids) {
-    if (!supabase || !user.value || user.value.id === 'demo-user') return
-    await supabase.from('transactions').delete().in('id', ids)
-  }
+  function migrateData() {
+    const totalIn = transactions.value.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
+    const totalOut = transactions.value.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
 
-  async function dbSaveJar(jar) {
-    if (!supabase || !user.value || user.value.id === 'demo-user') return
-    await supabase.from('jars').upsert(mapJarToDb(jar, user.value.id))
-  }
+    const sumJars = jars.value.reduce((s, j) => s + j.balance, 0)
+    let calcWallet = totalIn - totalOut - sumJars
 
-  async function dbDeleteJar(id) {
-    if (!supabase || !user.value || user.value.id === 'demo-user') return
-    await supabase.from('jars').delete().eq('id', id)
-  }
-
-  async function dbSaveUserSettings() {
-    if (!supabase || !user.value || user.value.id === 'demo-user') return
-    await supabase.from('user_settings').upsert({
-      user_id: user.value.id,
-      wallet_balance: walletBalance.value,
-      theme: theme.value,
-      allocation_enabled: allocationSettings.value.enabled,
-      allocation_rules: allocationSettings.value.rules,
-    })
-  }
-
-  async function dbSaveProfile() {
-    if (!supabase || !user.value || user.value.id === 'demo-user') return
-    await supabase.from('profiles').upsert({
-      id: user.value.id,
-      name: userProfile.value.name,
-      avatar_url: userProfile.value.avatar || userProfile.value.avatarUrl || userProfile.value.avatar_url || '',
-      company: userProfile.value.company || '',
-      location: userProfile.value.location || '',
-      website: userProfile.value.website || '',
-      social_links: userProfile.value.socialLinks || [],
-    })
-  }
-
-  // Load cloud data
-  async function loadUserDataFromCloud(userId) {
-    if (!supabase) return
-
-    // 1. Profile
-    const { data: profileData } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
-    if (profileData) {
-      userProfile.value = {
-        name: profileData.name || '',
-        email: user.value?.email || '',
-        avatar: profileData.avatar_url || '',
-        avatarUrl: profileData.avatar_url || '',
-        company: profileData.company || '',
-        location: profileData.location || '',
-        website: profileData.website || '',
-        socialLinks: profileData.social_links || [],
-      }
-    } else {
-      const defaultName = user.value?.user_metadata?.full_name || user.value?.email?.split('@')[0] || 'User'
-      userProfile.value = { name: defaultName, email: user.value?.email || '', avatar: '', avatarUrl: '', company: '', location: '', website: '', socialLinks: [] }
-      await supabase.from('profiles').insert({
-        id: userId,
-        name: defaultName,
-        avatar_url: '',
-        company: '',
-        location: '',
-        website: '',
-        social_links: [],
-      })
+    if (calcWallet < 0) {
+      const adjustment = Math.abs(calcWallet)
+      calcWallet = 0
+      addTransaction({
+        type: 'adjustment',
+        amount: adjustment,
+        description: 'Điều chỉnh cân bằng hệ thống (Migration Adjustment)',
+        category: 'other',
+        date: new Date().toISOString().split('T')[0],
+        isSystem: true
+      }, true)
     }
 
-    // 2. Settings
-    const { data: settingsData } = await supabase.from('user_settings').select('*').eq('user_id', userId).maybeSingle()
-    if (settingsData) {
-      walletBalance.value = Number(settingsData.wallet_balance)
-      theme.value = settingsData.theme || 'black'
-      allocationSettings.value = {
-        enabled: settingsData.allocation_enabled,
-        rules: settingsData.allocation_rules || {},
-      }
-    } else {
-      walletBalance.value = 0
-      theme.value = 'black'
-      allocationSettings.value = { enabled: false, rules: {} }
-      await supabase.from('user_settings').insert({
-        user_id: userId,
-        wallet_balance: 0,
-        theme: 'black',
-        allocation_enabled: false,
-        allocation_rules: {},
-      })
-    }
-
-    // 3. Jars
-    const { data: jarsData } = await supabase.from('jars').select('*').eq('user_id', userId)
-    if (jarsData && jarsData.length > 0) {
-      jars.value = jarsData.map(mapJarFromDb)
-    } else {
-      const defaultJars = CATEGORIES.filter(c => c.value !== 'income').map(c => ({
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-        name: `Hũ ${c.label}`,
-        icon: c.icon,
-        color: c.color,
-        balance: 0,
-        limit: 5000000,
-        milestones: [50, 80, 100],
-        categoryValue: c.value,
-      }))
-      jars.value = defaultJars
-      for (const jar of defaultJars) {
-        await supabase.from('jars').insert(mapJarToDb(jar, userId))
-      }
-    }
-
-    // 4. Transactions
-    const { data: txData } = await supabase.from('transactions').select('*').eq('user_id', userId).order('date', { ascending: false })
-    if (txData) {
-      transactions.value = txData.map(mapTxFromDb)
-    } else {
-      transactions.value = []
-    }
-  }
-
-  // Local storage migration to Cloud
-  async function migrateLocalStorageToCloud() {
-    if (!supabase || !user.value || user.value.id === 'demo-user') return
-
-    const localTransactions = loadFromStorage()
-    const localJars = loadJarsFromStorage()
-    const localWalletBalance = loadWalletBalance()
-    const localAllocationSettings = loadAllocationSettings()
-    const localProfile = loadProfileFromStorage()
-
-    if (localProfile) {
-      userProfile.value = { ...userProfile.value, ...localProfile }
-      await dbSaveProfile()
-    }
-    if (localWalletBalance !== null) walletBalance.value = localWalletBalance
-    if (localAllocationSettings) allocationSettings.value = localAllocationSettings
-    await dbSaveUserSettings()
-
-    if (localJars && localJars.length > 0) {
-      jars.value = localJars
-      for (const jar of localJars) {
-        await dbSaveJar(jar)
-      }
-    }
-    if (localTransactions && localTransactions.length > 0) {
-      transactions.value = localTransactions
-      const batch = localTransactions.map(tx => mapTxToDb(tx, user.value.id))
-      for (let i = 0; i < batch.length; i += 50) {
-        const chunk = batch.slice(i, i + 50)
-        await supabase.from('transactions').upsert(chunk)
-      }
-    }
-  }
-
-  // ── Auth Actions ─────────────────────────────────────────
-  async function register(email, password, name) {
-    if (!hasSupabaseConfig) throw new Error('Supabase is not configured')
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: name },
-      },
-    })
-    if (error) throw error
-    return data
-  }
-
-  async function login(email, password) {
-    if (!hasSupabaseConfig) throw new Error('Supabase is not configured')
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) throw error
-    return data
-  }
-
-  async function loginWithGoogle() {
-    if (!hasSupabaseConfig) throw new Error('Supabase is not configured')
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin + '/dashboard' },
-    })
-    if (error) throw error
-    return data
-  }
-
-  async function logout() {
-    if (hasSupabaseConfig && supabase) {
-      await supabase.auth.signOut()
-    }
-    user.value = null
-    clearStoreData()
-  }
-
-  function enterDemoMode() {
-    user.value = {
-      id: 'demo-user',
-      email: 'demo@smartexpense.io',
-      user_metadata: { full_name: 'Demo Account' },
-    }
-    const localTx = loadFromStorage()
-    const localJars = loadJarsFromStorage()
-    const localWallet = loadWalletBalance()
-    const localAllocation = loadAllocationSettings()
-    const localProfile = loadProfileFromStorage()
-    const localTheme = loadThemeFromStorage()
-
-    transactions.value = localTx ?? SEED_DATA
-    jars.value = localJars ?? CATEGORIES.filter(c => c.value !== 'income').map(c => ({
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-      name: `Hũ ${c.label}`,
-      icon: c.icon,
-      color: c.color,
-      balance: 0,
-      limit: 5000000,
-      milestones: [50, 80, 100],
-      categoryValue: c.value,
-    }))
-    walletBalance.value = localWallet ?? 0
-    allocationSettings.value = localAllocation
-    userProfile.value = localProfile
-    theme.value = localTheme
-  }
-
-  function clearStoreData() {
-    transactions.value = []
-    jars.value = []
-    walletBalance.value = 0
-    allocationSettings.value = { enabled: false, rules: {} }
-    userProfile.value = { name: '', email: '', company: '', location: '', website: '', socialLinks: [] }
-    theme.value = 'black'
-  }
-
-  // Initialize Auth
-  if (hasSupabaseConfig) {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        user.value = session.user
-        loadUserDataFromCloud(session.user.id).then(() => {
-          authLoading.value = false
-          checkAuthResolve()
-        })
-      } else {
-        user.value = null
-        authLoading.value = false
-        checkAuthResolve()
-      }
-    })
-
-    supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session) {
-        user.value = session.user
-        authLoading.value = true
-        await loadUserDataFromCloud(session.user.id)
-        authLoading.value = false
-      } else {
-        user.value = null
-        clearStoreData()
-        authLoading.value = false
-      }
-      checkAuthResolve()
-    })
-  } else {
-    authLoading.value = false
-    checkAuthResolve()
+    walletBalance.value = calcWallet
+    saveWalletToStorage(walletBalance.value)
   }
 
   // ── Computed ──────────────────────────────────────────────
@@ -532,17 +227,9 @@ export const useExpenseStore = defineStore('expense', () => {
       }
     }
 
-    if (user.value && user.value.id !== 'demo-user') {
-      dbSaveTransaction(newTx)
-      dbSaveUserSettings()
-      if (newTx.type === 'expense' || (newTx.type === 'income' && allocationSettings.value.enabled && !newTx.skipAutoAllocation)) {
-        jars.value.forEach(j => dbSaveJar(j))
-      }
-    } else {
-      saveToStorage(transactions.value)
-      saveJarsToStorage(jars.value)
-      saveWalletToStorage(walletBalance.value)
-    }
+    saveToStorage(transactions.value)
+    saveJarsToStorage(jars.value)
+    saveWalletToStorage(walletBalance.value)
   }
 
   function performAutoAllocation(amount) {
@@ -566,13 +253,18 @@ export const useExpenseStore = defineStore('expense', () => {
     if (idArray.length === 0) return
 
     const formatVNDLocal = (v) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v)
+
+    // ── Validation Phase (Simulation) ─────────────────────
     const jarBalanceSim = {}
+    
+    // Initialize sim balances with current balances
     jars.value.forEach(j => { jarBalanceSim[j.id] = j.balance })
 
     for (const id of idArray) {
       const tx = transactions.value.find(t => t.id === id)
       if (!tx) continue
 
+      // Case 1: Internal transfer MAIN -> JAR (Refill)
       if (tx.type === 'internal' && tx.sourceType === 'MAIN' && tx.targetType === 'JAR') {
         const jar = jars.value.find(j => j.id === tx.targetId)
         if (!jar) {
@@ -584,6 +276,7 @@ export const useExpenseStore = defineStore('expense', () => {
         jarBalanceSim[jar.id] -= tx.amount
       }
 
+      // Case 2: Income with auto-allocation
       if (tx.type === 'income' && allocationSettings.value.enabled && !tx.skipAutoAllocation) {
         const rules = allocationSettings.value.rules || {}
         for (const [jarId, percent] of Object.entries(rules)) {
@@ -597,9 +290,15 @@ export const useExpenseStore = defineStore('expense', () => {
           }
         }
       }
+      
+      // Note: Expense and Withdrawal deletions increase jar balance, so they don't need validation checks
+      // but if we were perfectly accurate, we'd add those to jarBalanceSim too.
+      // However, simple sequential validation is enough to prevent negative balances.
     }
 
+    // ── Execution Phase ───────────────────────────────────
     let totalRefundToWallet = 0
+
     for (const id of idArray) {
       const tx = transactions.value.find(t => t.id === id)
       if (!tx) continue
@@ -642,17 +341,9 @@ export const useExpenseStore = defineStore('expense', () => {
     await new Promise(resolve => setTimeout(resolve, idArray.length > 1 ? 600 : 400))
     transactions.value = transactions.value.filter(t => !idArray.includes(t.id))
 
-    if (user.value && user.value.id !== 'demo-user') {
-      await dbDeleteTransactions(idArray)
-      await dbSaveUserSettings()
-      for (const j of jars.value) {
-        await dbSaveJar(j)
-      }
-    } else {
-      saveToStorage(transactions.value)
-      saveJarsToStorage(jars.value)
-      saveWalletToStorage(walletBalance.value)
-    }
+    saveToStorage(transactions.value)
+    saveJarsToStorage(jars.value)
+    saveWalletToStorage(walletBalance.value)
   }
 
   function depositToJar(jarId, amount) {
@@ -670,16 +361,11 @@ export const useExpenseStore = defineStore('expense', () => {
         sourceType: 'MAIN',
         targetType: 'JAR',
         targetId: jar.id,
-        isInternal: true,
+        isInternal: true
       }, true)
 
-      if (user.value && user.value.id !== 'demo-user') {
-        dbSaveJar(jar)
-        dbSaveUserSettings()
-      } else {
-        saveJarsToStorage(jars.value)
-        saveWalletToStorage(walletBalance.value)
-      }
+      saveJarsToStorage(jars.value)
+      saveWalletToStorage(walletBalance.value)
       return true
     }
     return false
@@ -700,47 +386,32 @@ export const useExpenseStore = defineStore('expense', () => {
         sourceType: 'JAR',
         targetType: 'MAIN',
         sourceId: jar.id,
-        isInternal: true,
+        isInternal: true
       }, true)
 
-      if (user.value && user.value.id !== 'demo-user') {
-        dbSaveJar(jar)
-        dbSaveUserSettings()
-      } else {
-        saveJarsToStorage(jars.value)
-        saveWalletToStorage(walletBalance.value)
-      }
+      saveJarsToStorage(jars.value)
+      saveWalletToStorage(walletBalance.value)
       return true
     }
     return false
   }
 
   function addJar(jar) {
-    const newJar = {
+    jars.value.push({
       id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
       balance: 0,
       limit: 5000000,
       milestones: [50, 80, 100],
-      ...jar,
-    }
-    jars.value.push(newJar)
-
-    if (user.value && user.value.id !== 'demo-user') {
-      dbSaveJar(newJar)
-    } else {
-      saveJarsToStorage(jars.value)
-    }
+      ...jar
+    })
+    saveJarsToStorage(jars.value)
   }
 
   function updateJar(id, payload) {
     const index = jars.value.findIndex(j => j.id === id)
     if (index !== -1) {
       jars.value[index] = { ...jars.value[index], ...payload }
-      if (user.value && user.value.id !== 'demo-user') {
-        dbSaveJar(jars.value[index])
-      } else {
-        saveJarsToStorage(jars.value)
-      }
+      saveJarsToStorage(jars.value)
     }
   }
 
@@ -755,101 +426,56 @@ export const useExpenseStore = defineStore('expense', () => {
           description: `Giải thể hũ ${jar.name} - Hoàn trả ví`,
           category: 'other',
           date: new Date().toISOString().split('T')[0],
-          isInternal: true,
+          isInternal: true
         }, true)
       }
       jars.value = jars.value.filter(j => j.id !== id)
-
-      if (user.value && user.value.id !== 'demo-user') {
-        dbDeleteJar(id)
-        dbSaveUserSettings()
-      } else {
-        saveJarsToStorage(jars.value)
-        saveWalletToStorage(walletBalance.value)
-      }
+      saveJarsToStorage(jars.value)
+      saveWalletToStorage(walletBalance.value)
     }
   }
 
   function updateAllocationSettings(settings) {
     allocationSettings.value = { ...allocationSettings.value, ...settings }
-    if (user.value && user.value.id !== 'demo-user') {
-      dbSaveUserSettings()
-    } else {
-      saveAllocationToStorage(allocationSettings.value)
-    }
+    saveAllocationToStorage(allocationSettings.value)
   }
 
   function updateProfile(payload) {
     userProfile.value = { ...userProfile.value, ...payload }
-    if (user.value && user.value.id !== 'demo-user') {
-      dbSaveProfile()
-    } else {
-      saveProfileToStorage(userProfile.value)
-    }
+    saveProfileToStorage(userProfile.value)
   }
 
   function setTheme(t) {
     theme.value = t
     localStorage.setItem(THEME_KEY, t)
-    if (user.value && user.value.id !== 'demo-user') {
-      dbSaveUserSettings()
-    }
   }
 
   function clearAllData() {
     transactions.value = []
     jars.value.forEach(j => j.balance = 0)
     walletBalance.value = 0
-
-    if (user.value && user.value.id !== 'demo-user') {
-      supabase.from('transactions').delete().eq('user_id', user.value.id).then()
-      dbSaveUserSettings()
-      jars.value.forEach(j => dbSaveJar(j))
-    } else {
-      saveToStorage(transactions.value)
-      saveJarsToStorage(jars.value)
-      saveWalletToStorage(walletBalance.value)
-    }
+    saveToStorage(transactions.value)
+    saveJarsToStorage(jars.value)
+    saveWalletToStorage(walletBalance.value)
   }
 
   function resetToDefault() {
-    if (user.value && user.value.id !== 'demo-user') {
-      logout().then(() => window.location.reload())
-    } else {
-      localStorage.clear()
-      window.location.reload()
-    }
+    localStorage.clear()
+    window.location.reload()
   }
 
   return {
-    // State
-    user,
-    authLoading,
-    checkAuthPromise,
-    hasSupabaseConfig,
     transactions,
     jars,
     walletBalance,
     allocationSettings,
     userProfile,
     theme,
-
-    // Getters
     totalIncome,
     totalExpense,
     balance,
     totalJarBalance,
     expenseByCategory,
-
-    // Auth Actions
-    register,
-    login,
-    loginWithGoogle,
-    logout,
-    enterDemoMode,
-    migrateLocalStorageToCloud,
-
-    // Data Actions
     addTransaction,
     deleteTransaction,
     depositToJar,

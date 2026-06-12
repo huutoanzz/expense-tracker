@@ -104,19 +104,6 @@
             <img :src="getSocialInfo(link.url).favicon" class="social-favicon" :alt="getSocialInfo(link.url).label" />
           </a>
         </div>
-
-        <!-- Logout Button -->
-        <div class="logout-btn-wrap" style="margin-top: 24px; width: 100%;">
-          <el-button 
-            type="danger" 
-            plain 
-            class="logout-btn"
-            style="width: 100%; border-radius: 20px; font-weight: 600;"
-            @click="handleLogout"
-          >
-            <el-icon><SwitchButton /></el-icon>&nbsp; Đăng xuất
-          </el-button>
-        </div>
       </div>
 
       <!-- ── Right: Form ────────────────────────────────────── -->
@@ -203,9 +190,9 @@
           </div>
         </el-form>
 
-        <!-- ── Photo Library ────────────────────────────────────── -->
+        <!-- ── Photo Library ──────────────────────────────────── -->
         <div class="photo-library-section">
-          <ImageUpload :userId="store.user?.id" />
+          <ImageUpload />
         </div>
       </div>
 
@@ -214,20 +201,18 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useExpenseStore } from '../stores/expenseStore'
 import ImageUpload from './ImageUpload.vue'
 
 const store = useExpenseStore()
-const router = useRouter()
 const formRef = ref(null)
 const saving = ref(false)
 
-// ── Cloudinary config ────────────────────────────────────────────
-const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dgrxajiru'
-const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'avatar_upload_expense_tracker'
+// ── Cloudinary config ──────────────────────────────────────
+const CLOUDINARY_CLOUD_NAME = 'dgrxajiru'
+const CLOUDINARY_UPLOAD_PRESET = 'avatar_upload_expense_tracker'
 const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`
 
 // ── Avatar state ───────────────────────────────────────────
@@ -266,10 +251,6 @@ async function uploadToCloudinary(file) {
   const formData = new FormData()
   formData.append('file', file)
   formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET)
-  // Upload avatar vào folder riêng theo userId
-  if (store.user?.id) {
-    formData.append('folder', `expense_tracker/${store.user.id}/avatar`)
-  }
 
   const response = await fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: formData })
   if (!response.ok) {
@@ -414,39 +395,6 @@ async function handleSave() {
   })
   ElMessage({ message: 'Đã lưu thông tin!', type: 'success', duration: 2500 })
   saving.value = false
-}
-
-// Watch userProfile to update form fields reactively on load
-watch(() => store.userProfile, (newProfile) => {
-  if (newProfile) {
-    form.name = newProfile.name || ''
-    form.email = newProfile.email || ''
-    form.company = newProfile.company || ''
-    form.location = newProfile.location || ''
-    form.website = newProfile.website || ''
-    form.socialLinks = (newProfile.socialLinks || []).map(s => ({ url: s.url || '' }))
-    if (newProfile.avatar) avatarUrl.value = newProfile.avatar
-  }
-}, { deep: true, immediate: true })
-
-async function handleLogout() {
-  try {
-    const { ElMessageBox } = await import('element-plus')
-    await ElMessageBox.confirm(
-      'Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?',
-      'Đăng Xuất',
-      {
-        confirmButtonText: 'Đăng xuất',
-        cancelButtonText: 'Hủy',
-        type: 'warning'
-      }
-    )
-    await store.logout()
-    ElMessage({ type: 'success', message: 'Đăng xuất thành công!' })
-    router.push({ name: 'login' })
-  } catch (err) {
-    // Cancelled or error
-  }
 }
 </script>
 
